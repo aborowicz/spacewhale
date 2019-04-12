@@ -1,0 +1,4 @@
+gen_training_patches.py:35: DeprecationWarning: `imread` is deprecated!
+`imread` is deprecated in SciPy 1.0.0, and will be removed in 1.2.0.
+Use ``imageio.imread`` instead.
+  png = misc.imread(im_path,mode='RGB')

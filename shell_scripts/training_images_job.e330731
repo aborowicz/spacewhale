@@ -1,0 +1,9 @@
+Traceback (most recent call last):
+  File "training_tester_weighted.py", line 65, in <module>
+    image_datasets = {x: datasets.ImageFolder(os.path.join(data_dir,x),s.data_transforms[x]) for x in ['train']}
+  File "training_tester_weighted.py", line 65, in <dictcomp>
+    image_datasets = {x: datasets.ImageFolder(os.path.join(data_dir,x),s.data_transforms[x]) for x in ['train']}
+  File "/gpfs/projects/LynchGroup/spacewhale/space_env/lib/python3.7/site-packages/torchvision-0.2.1-py3.7.egg/torchvision/datasets/folder.py", line 178, in __init__
+  File "/gpfs/projects/LynchGroup/spacewhale/space_env/lib/python3.7/site-packages/torchvision-0.2.1-py3.7.egg/torchvision/datasets/folder.py", line 75, in __init__
+  File "/gpfs/projects/LynchGroup/spacewhale/space_env/lib/python3.7/site-packages/torchvision-0.2.1-py3.7.egg/torchvision/datasets/folder.py", line 23, in find_classes
+FileNotFoundError: [Errno 2] No such file or directory: 'training_images/select/train'
