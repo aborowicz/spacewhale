@@ -6,17 +6,29 @@ SPACEWHALE is a workflow for using high-resolution satellite imagery and compute
 
 SPACEWHALE runs on the command line. 
 
-gen_training_patches.py takes in images and chops them into 32px x 32px tiles. It takes as arguments the directory of images to tile ```--root```, the step (how many pixels before starting a new tile) ```--step```, the square tile size in pixels ```---size```, and the output directory ```--output```. For example ```python gen_training_patches.py --root './water_training' --step 16 --size 32 --output './water_tiles'``` 
+```31cmAerialImagery.zip``` contains the aerial imagery
 
-m_util.py houses functions etc. that are called by other scripts
+'''gen_training_patches.py''' takes in images and chops them into 32px x 32px tiles. It takes as arguments the directory of images to tile ```--root```, the step (how many pixels before starting a new tile) ```--step```, the square tile size in pixels ```---size```, and the output directory ```--output```. For example 
+```python gen_training_patches.py --root './water_training' --step 16 --size 32 --output './water_tiles'``` 
 
-training_tester_weighted.py trains a model using a set of aerial images that you define.
+```m_util.py``` houses functions etc. that are called by other scripts
 
-test_script.py validates the model with a test set that you define.
+```training_tester_weighted.py``` trains a model using a set of aerial images that you define. Example:
+``` python training_tester_weighted.py --name model_1 --data_dir './the_data' --verbose True --epochs 24```
+```name``` is what you want to call the model you're about to train
+```data_dir``` is the directory with your training data in it. In this case your training data need to be in a dir called *train* and you should point to the dir above it. Inside *train* you need a dir with each of your classes (e.g. *whale* and *water*)
+```verbose``` asks whether you want info printed out in the terminal
+```epochs``` asks for how many epochs you'd like the model to train
 
-31cmAerialImagery.zip contains the aerial imagery
+```test_script.py``` validates the model with a test set that you define and kicks out some output such as the precision and recall at each epoch. It also writes out 3 CSVs with the filename, label, and prediction for each image in a separate CSV. Example:
+```python test_script.py --data_dir './test_dir' --model model_1 --epochs 24```
+```data_dir``` should include two dirs labeled with your classes (exactly as they were for training, e.g. *water* and *whale* in our case). 
+```model``` is the trained model that you'll use to test with
+```epochs``` refers to the # of epochs in your model
 
-shell_scripts houses scripts used to send training and validation jobs to the SeaWulf cluster at IACS at Stony Brook U (with proper credentials)
+The ```shell_scripts``` dir houses scripts used to send training and validation jobs to the SeaWulf cluster at IACS at Stony Brook U (with proper credentials) for Slurm and Torque
 
-Revision_PLOS houses the working draft of the revised manuscript for this project.
+The ```Revision_PLOS``` dir houses the working draft of the revised manuscript for this project.
+
+```SPACEWHALE_confusionMatrix.R``` is an R script for building a confusion matrix in ggplot2.
 
