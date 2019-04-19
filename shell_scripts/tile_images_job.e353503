@@ -1,6 +1,0 @@
-gen_training_patches.py:35: DeprecationWarning: `imread` is deprecated!
-`imread` is deprecated in SciPy 1.0.0, and will be removed in 1.2.0.
-Use ``imageio.imread`` instead.
-  png = misc.imread(im_path,mode='RGB')
-/gpfs/projects/LynchGroup/spacewhale/space_env/lib/python3.7/site-packages/PIL/Image.py:2514: DecompressionBombWarning: Image size (98805462 pixels) exceeds limit of 89478485 pixels, could be decompression bomb DOS attack.
-  DecompressionBombWarning)
