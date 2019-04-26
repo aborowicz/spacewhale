@@ -40,6 +40,7 @@ import argparse
 ### Create arguments for command line interface
 parser = argparse.ArgumentParser()
 parser.add_argument('--name',type=str)
+parser.add_argument('--model',type=str)
 parser.add_argument('--data_dir',type=str)
 parser.add_argument('--verbose',type=bool,default=False)
 parser.add_argument('--epochs',type=int,default=25)
@@ -109,11 +110,10 @@ print('-------------------------------------------------------------------------
 ### We then set the learning rate to decay every 7 epochs 
 
 ### Here we can put in other available models
-#model_ft = models.resnet18(pretrained=True) 
-model_ft = models.resnet34(pretrained=True)
-num_ftrs = model_ft.fc.in_features  
-model_ft.fc = nn.Linear(num_ftrs, 2)    
+model_ft = define_model(name = opt.model)
 model_ft = model_ft.to(device)
+
+
 criterion = nn.CrossEntropyLoss()
 optimizer_ft = optim.SGD(model_ft.parameters(), lr=0.0009, momentum=0.9)
 exp_lr_scheduler = lr_scheduler.StepLR(optimizer_ft, step_size=7, gamma=0.1)
