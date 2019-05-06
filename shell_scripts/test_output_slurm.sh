@@ -1,7 +1,7 @@
 #!/bin/bash
 #
 #SBATCH --job-name=modelo_testing_job
-#SBATCH --output=densenet_full224_testlr001.txt
+#SBATCH --output=resnet18_full32_testlr001.txt
 #SBATCH --ntasks=28
 #SBATCH --nodes=1
 #SBATCH --time=04:00:00
@@ -29,7 +29,7 @@ cd ./git_spacewhale/spacewhale
 
 for i in {0..23}
 do
-     python test_script.py --data_dir ../../whale/new_pansharp/test --modtype densenet --model densenet_full224_lr001 --epoch $i
+     python test_script.py --data_dir ../../whale/new_pansharp/test --modtype resnet18 --model resnet18_full32_lr001 --epoch $i
 done
 
 date
