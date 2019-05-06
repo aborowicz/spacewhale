@@ -8,6 +8,10 @@ import numpy as np
 import torchvision
 from torchvision import datasets, models, transforms
 def define_model(name ='resnet32'):
+    if name=='resnet18':
+        model = torchvision.models.resnet18(pretrained=True)
+        num_ftrs = model.fc.in_features
+        model.fc = nn.Linear(num_ftrs, 2)
     if name=='resnet32':
         model = models.resnet34(pretrained=True)
         num_ftrs = model.fc.in_features  

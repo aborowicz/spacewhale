@@ -7,7 +7,7 @@
 #######################################################################################################
 #### Usage examples (Linux)
 ####
-####  $python testing_script.py --data_dir /home/ghumphries/spacewhale/test --model MODEL1 --epoch 24
+####  $python testing_script.py --data_dir /home/ghumphries/spacewhale/test --modtype densenet --model MODEL1 --epoch 24
 ####
 #######################################################################################################
 #### Setup information
@@ -42,6 +42,7 @@ import time
 import os
 import copy
 import argparse
+from model import define_model
 
 s = spacewhale()
 
@@ -49,6 +50,7 @@ s = spacewhale()
 parse = argparse.ArgumentParser()
 parse.add_argument('--data_dir')
 parse.add_argument('--model')
+parse.add_argument('--modtype', type=str)
 parse.add_argument('--epoch',type=int,default=24)
 opt = parse.parse_args()
 
@@ -70,11 +72,14 @@ test_transforms = s.data_transforms['test']
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 torch.set_default_tensor_type('torch.cuda.FloatTensor')
 
-model_ft = torchvision.models.resnet18(pretrained=True)
-num_ftrs = model_ft.fc.in_features
-model_ft.fc = nn.Linear(num_ftrs, 2)
-model_ft = model_ft.to(device)
+#model_ft = torchvision.models.resnet18(pretrained=True)
+model_ft = define_model(name = opt.modtype)
 
+## Scrubbed these because they're in model.py now
+#num_ftrs = model_ft.fc.in_features
+#model_ft.fc = nn.Linear(num_ftrs, 2)
+
+model_ft = model_ft.to(device)
 
 model_ft.load_state_dict(torch.load(trained_model))
 model_ft.eval()

@@ -1,7 +1,7 @@
 #!/bin/bash
 #
 #SBATCH --job-name=modelo_testing_job
-#SBATCH --output=res1.txt
+#SBATCH --output=densenet_full224_testlr001.txt
 #SBATCH --ntasks=28
 #SBATCH --nodes=1
 #SBATCH --time=04:00:00
@@ -9,13 +9,14 @@
 
 
 module load shared
-module load torque
+#module load torque
 module load anaconda/3
 module load cuda91/toolkit/9.1
 
-cd ../..
+pwd
+date
+cd ../../..
 #cd projects/LynchGroup/spacewhale
-
 
 
 # Let's test a trained model!
@@ -24,10 +25,11 @@ cd ../..
 
 source activate ./space_env
 
-cd whale
+cd ./git_spacewhale/spacewhale
 
-for i in {0..1}
+for i in {0..23}
 do
-     python test_script.py --data_dir tiled_air32/fold_4/test_4/ --model f4_32_001 --epoch $i
+     python test_script.py --data_dir ../../whale/new_pansharp/test --modtype densenet --model densenet_full224_lr001 --epoch $i
 done
 
+date

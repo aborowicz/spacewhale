@@ -6,7 +6,7 @@
 #######################################################################################################
 #### Usage examples (Linux)
 ####
-####  $python training_script.py --name MODEL1 --data_dir /home/ghumphries/spacewhale/data --verbose True --epochs 19
+####  $python training_script.py --name MODEL1 --model resnet18 --data_dir /home/ghumphries/spacewhale/data --verbose True --epochs 19
 ####
 #######################################################################################################
 #### Setup information
@@ -35,6 +35,7 @@ import os
 import copy
 from m_util import *
 import argparse
+from model import define_model
 #######################################################################################################
 
 ### Create arguments for command line interface
@@ -60,6 +61,7 @@ print('#########################################################################
 print('WELCOME TO SPACEWHALE!')
 print('######################################################################################################')
 print('We will now train your model.. please be patient')
+print('Using', opt.model, 'Your trained model will be named', opt.name) 
 print('------------------------------------------------------------------------------')
 
 ### This part loads up any folders in the 'train' folder with the label being the name of the folder
@@ -115,7 +117,7 @@ model_ft = model_ft.to(device)
 
 
 criterion = nn.CrossEntropyLoss()
-optimizer_ft = optim.SGD(model_ft.parameters(), lr=0.0009, momentum=0.9)
+optimizer_ft = optim.SGD(model_ft.parameters(), lr=0.2, momentum=0.9)
 exp_lr_scheduler = lr_scheduler.StepLR(optimizer_ft, step_size=7, gamma=0.1)
 
 ### If the verbose option is set, then print out the model
