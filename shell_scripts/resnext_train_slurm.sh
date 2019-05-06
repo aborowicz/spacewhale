@@ -1,7 +1,7 @@
 #!/bin/bash
 #
-#SBATCH --job-name=sat_training1
-#SBATCH --output=densenet_full224training_res_lr2.txt
+#SBATCH --job-name=sat_training2
+#SBATCH --output=resnext32_training_res.txt
 #SBATCH --ntasks=28
 #SBATCH --nodes=1
 #SBATCH --time=08:00:00
@@ -13,10 +13,11 @@ pwd
 
 # Let's train our whalefinder model!
 # --name  is a new name for your model!
+# --model is the pre-trained model (densenet, reneXT, resnet18)
 # --data_dir is where your images are
-# !!!!: They must be in a directory named train!
+# !!!!: They must be in a directory named training!
 # So if --data_dir training_images, then training images must contain
-#        a dir called train, and inside is a whale and a water dir
+#        a dir called training, and inside is a whale and a water dir
 # --epochs is the number of epochs you want
 
 module load shared
@@ -30,5 +31,5 @@ source activate ./space_env
 cd git_spacewhale/spacewhale
 date
 
-python training_tester_weighted.py --name densenet_full224_lr2 --model densenet --data_dir ../../whale/tiledair_224/full_air/  --epochs 24
+python training_tester_weighted.py --name resnext_full_air --model resneXt --data_dir ../../whale/tiled_air32/full_air  --epochs 24
 date

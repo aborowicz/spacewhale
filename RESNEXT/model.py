@@ -3,11 +3,13 @@ from torch import nn as nn
 import os
 #os.environ["CUDA_DEVICE_ORDER"]="PCI_BUS_ID"
 #os.environ["CUDA_VISIBLE_DEVICES"]="2"
-import resnext_101_32x4d_
+from . import resnext_101_32x4d_
 class ResNeXt101(nn.Module):
     def __init__(self,out_nc=2):
+        print(os.getcwd())
         super(ResNeXt101, self).__init__()
         net = resnext_101_32x4d_.resnext_101_32x4d
+        #resnext_101_32_path = './RESNEXT/resnext_101_32x4d.pth'
         resnext_101_32_path = './RESNEXT/resnext_101_32x4d.pth'
         net.load_state_dict(torch.load(resnext_101_32_path))
         

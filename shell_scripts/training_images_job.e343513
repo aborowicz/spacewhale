@@ -1,6 +1,0 @@
-Traceback (most recent call last):
-  File "training_tester.py", line 107, in <module>
-    model_ft = s.train_model(opt, device, dataset_sizes, dataloaders, model_ft, criterion, optimizer_ft, exp_lr_scheduler, num_epochs=opt.epochs)
-  File "/gpfs/projects/LynchGroup/spacewhale/whale/m_util.py", line 105, in train_model
-    for batch_index, (inputs, labels) in enumerate(dataloaders):
-ValueError: too many values to unpack (expected 2)
