@@ -39,9 +39,10 @@ los_p<-ggplot(data=res, aes(x=epoch))+
   scale_colour_manual(values=cbPalette)
 los_p
 
-testres<-ggplot(data=res2, aes(x=prec, y=recall))+
-  geom_point(aes(color=LR, shape=model), size=3)+
+testres<-ggplot(data=res2, aes(x=prec, y=recall, color=LR, shape=model))+
+  #geom_point()+
   theme_minimal()+
+  geom_jitter(aes(color=LR, shape=model), width=0.0007, size=3)+
   scale_colour_manual(values=cbPalette)
 testres
 
