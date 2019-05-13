@@ -1,10 +1,13 @@
 library(tidyverse)
 ## Colorblind color palette
-cbPalette <- c("#999999", "#E69F00", "#56B4E9", "#009E73", "#CC79A7", "#0072B2", "#D55E00","#F0E442" )
+cbPalette <- c("#999999", "#E69F00", "#56B4E9", "#009E73", "#CC79A7", "#0072B2", "#D55E00","#F0E442", "#000000" )
 
 #res<-read.csv('C:\\Users\\Starship\\Google Drive\\Projects\\Space Whales\\model_results\\example_res.csv')
 res<-read.csv('C:\\Users\\Starship\\Desktop\\GitHub\\spacewhale\\Revision_PLOS\\train_model_results.csv')
 res2<-read.csv('C:\\Users\\Starship\\Desktop\\GitHub\\spacewhale\\Revision_PLOS\\test_model_results.csv')
+foldres<-read.csv('C:\\Users\\Starship\\Desktop\\GitHub\\spacewhale\\Revision_PLOS\\Fold10_training_results.csv')
+foldres2<-read.csv('C:\\Users\\Starship\\Desktop\\GitHub\\spacewhale\\Revision_PLOS\\test_fold_results.csv')
+
 
 res$LR<-as.factor(res$LR)
 res2$LR<-as.factor(res2$LR)
@@ -46,6 +49,30 @@ testres<-ggplot(data=res2, aes(x=prec, y=recall, color=LR, shape=model))+
   scale_colour_manual(values=cbPalette)
 testres
 
+###############################################
+### 10-fold Training Results ##################
+###############################################
+
+foldplot<-ggplot(data=foldres, aes(x=epoch))+
+  geom_line(aes(y=Acc, color=model))+
+  geom_line(aes(y=Loss, color=model), linetype='dotdash')+
+  theme_minimal()+
+  scale_colour_manual(values=cbPalette)+
+  labs(x="Training Epoch", y="Accuracy (solid) and Loss(dashed)")+
+  ggtitle("Ten-fold model training performance")
+foldplot
+
+###############################################
+### 10-fold Test results ######################
+###############################################
+
+foldtest<-ggplot(data=foldres2, aes(x=prec, y=recall, color=model))+
+  #geom_point(size=3)+
+  theme_minimal()+
+  geom_jitter(aes(), width=0.0002, height=0.0002, size=3)+
+  scale_colour_manual(values=cbPalette)+
+  labs(x="Precision", y="Recall")
+foldtest
 
 ########### Confusion matrix
 # c() for each is tp,tn,fp,fn where tp is a true water, tn is a true whale
