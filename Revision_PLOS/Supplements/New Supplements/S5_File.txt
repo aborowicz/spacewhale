@@ -18,6 +18,7 @@ class ResNeXt101(nn.Module):
         super(ResNeXt101, self).__init__()
         #net = resnext_101_32x4d_.resnext_101_32x4d
         net = resneXt.resnext_101_32x4d
+        ##### Need to download the .pth file first #####
         resnext_101_32_path = './RESNEXT/resnext_101_32x4d.pth'
         net.load_state_dict(torch.load(resnext_101_32_path))
         
