@@ -26,7 +26,10 @@ SPACEWHALE runs on the command line.
 ```model``` is the trained model that you'll use to test with
 ```epochs``` refers to the # of epochs in your model
 
-The ```shell_scripts``` dir houses scripts used to send training and validation jobs to the SeaWulf cluster at IACS at Stony Brook U (with proper credentials) for Slurm and Torque
+The ```shell_scripts``` dir houses scripts used to send training and validation jobs to the SeaWulf cluster at IACS at Stony Brook U (with proper credentials) for Slurm and Torq
+The ```Revision_PLOS``` dir houses the working draft of the revised manuscript for this project.
+
+```SPACEWHALE_confusionMatrix.R``` is an R script for building a confusion matrix in ggplot2.
 
 The ```Revision_PLOS``` dir houses the working draft of the revised manuscript for this project.
 
