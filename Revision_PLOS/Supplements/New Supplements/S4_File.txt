@@ -2,7 +2,7 @@
 #### SPACEWHALE Project
 #### Utility codes that are called for spacewhale
 #### Filename: m_util.py
-#### Authors: Hieu Le & Grant Humphries
+#### Authors: Hieu Le, Grant Humphries, Alex Borowicz
 #### Date: May, 2019
 #### contact: aborowicz@coa.edu
 #### All code available at https://github.com/aborowicz/spacewhale/

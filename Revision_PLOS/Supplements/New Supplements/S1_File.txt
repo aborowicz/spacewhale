@@ -1,21 +1,22 @@
 ### SPACEWHALE PROJECT
 ### File: gen_training_patches.py
-### Alex Borowicz, aborowicz@coa.edu
+### Alex Borowicz, Grant Humphries
+### contact: aborowicz@coa.edu
 ### Find all code at https://github.com/aborowicz/spacewhale/
 ### This script takes in a large image, like a satellite image
 ### or an aerial survey image, and chops it into smaller tiles.
 ### These tiles can overlap (by making --step smaller than --size)
 ### or can line up with no overlap (by making --step and --size the same)
-### 
-
+###########################################################################
 ### Usage:
 # --root is the dir where the image(s) are located
 # --step is the step between tiles, so start a new tile every __ pixels
 # --size is the size of the tile in px (always square)
 # --output is the dir to write the patches in
-### Example (making non-overlapping 32 x 32 pixel tiles):
+###########################################################################
+# Example (making non-overlapping 32 x 32 pixel tiles):
 # python gen_training_patches.py --root ./imagery/hawaii/ --step 32 --size 32 --output ./tiled_hawaii
-###
+###########################################################################
 
 import numpy as np
 from PIL import Image

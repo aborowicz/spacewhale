@@ -1,6 +1,6 @@
 #######################################################################################################
 #### SPACEWHALE PROJECT
-#### Script for training a pytorch, convolutional neural net ####
+#### Script for training a pytorch convolutional neural net
 #### Authors:  Hieu Le, Grant Humphries, Alex Borowicz
 #### Date: May 2019
 #### Filename: training_tester_weighted.py

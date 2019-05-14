@@ -3,10 +3,12 @@ library(tidyverse)
 cbPalette <- c("#999999", "#E69F00", "#56B4E9", "#009E73", "#CC79A7", "#0072B2", "#D55E00","#F0E442", "#000000", "#54278f" )
 
 ## Load in data
-res<-read.csv('C:\\Users\\Starship\\Desktop\\GitHub\\spacewhale\\Revision_PLOS\\train_model_results.csv')
-res2<-read.csv('C:\\Users\\Starship\\Desktop\\GitHub\\spacewhale\\Revision_PLOS\\test_model_results.csv')
-foldres<-read.csv('C:\\Users\\Starship\\Desktop\\GitHub\\spacewhale\\Revision_PLOS\\Fold10_training_results.csv')
-foldres2<-read.csv('C:\\Users\\Starship\\Desktop\\GitHub\\spacewhale\\Revision_PLOS\\test_fold_results.csv')
+setwd('C:\\Users\\Starship\\Desktop\\GitHub\\spacewhale\\Revision_PLOS')
+res<-read.csv('train_model_results.csv')
+res2<-read.csv('test_model_results.csv')
+foldres<-read.csv('Fold10_training_results.csv')
+foldres2<-read.csv('test_fold_results.csv')
+confu_dat<-read.csv('confusion_data.csv')
 
 ### Data wrangling ###
 res$LR<-as.factor(res$LR)
@@ -93,12 +95,11 @@ foldtest
 ## Making confusion matrices for the different model runs ###################
 ## c() for each is tp,tn,fp,fn where tp is a true water, tn is a true whale #
 
-confu_dat<-read.csv('C:\\Users\\Starship\\Desktop\\GitHub\\spacewhale\\Revision_PLOS\\confusion_data.csv')
 confu_dat$lr<-as.factor(confu_dat$lr)
 confu_dat$lab<-as.factor(confu_dat$lab)
 confu_dat$pred<-as.factor(confu_dat$pred)
 
-ggplot(data =  confu_dat[which(confu_dat$mod=='densenet' & confu_dat$lr=='0.001'),], aes(x = lab, y = pred)) +
+ggplot(data =  confu_dat[which(confu_dat$mod=='resnet-32' & confu_dat$lr=='9e-04'),], aes(x = lab, y = pred)) +
   geom_tile(aes(fill = val), colour="black") +
   geom_text(aes(label = sprintf("%1.0f", val)), vjust = 1) +
   scale_fill_gradient(low = "white", high = "white") +
