@@ -74,7 +74,10 @@ class spacewhale:
         
         misc.toimage(png[w-size:w,h-size:h,:]).save(imbasename+format(ni-1,'03d')+'_'+format(nj-1,'03d')+'.png')
 
+    def resize_ims(self,png,size,imbasename):
 
+        out = png.resize(size)
+        out.save(imbasename, 'png')
 
 
     def train_model(self, opt, device, dataset_sizes, dataloaders, model, criterion, optimizer, scheduler, num_epochs=25):
@@ -102,7 +105,7 @@ class spacewhale:
                 fn=0
 
                 # Iterate over data.
-#                for inputs, labels  in dataloaders[phase]:
+                #for inputs, labels  in dataloaders[phase]:
                 for batch_index, (inputs, labels) in enumerate(dataloaders):
                      
                     inputs = inputs.to(device)

@@ -26,9 +26,23 @@ SPACEWHALE runs on the command line.
 ```model``` is the trained model that you'll use to test with
 ```epochs``` refers to the # of epochs in your model
 
-The ```shell_scripts``` dir houses scripts used to send training and validation jobs to the SeaWulf cluster at IACS at Stony Brook U (with proper credentials) for Slurm and Torque
+The ```shell_scripts``` dir houses scripts used to send training and validation jobs to the SeaWulf cluster at IACS at Stony Brook U (with proper credentials) for Slurm and Torq
+The ```Revision_PLOS``` dir houses the working draft of the revised manuscript for this project.
+
+```SPACEWHALE_confusionMatrix.R``` is an R script for building a confusion matrix in ggplot2.
 
 The ```Revision_PLOS``` dir houses the working draft of the revised manuscript for this project.
 
 ```SPACEWHALE_confusionMatrix.R``` is an R script for building a confusion matrix in ggplot2.
 
+## Pre-trained Models Used for Training:
+
+Both ```DenseNet161``` and ```ResNet18``` can be downloaded via torchvision ModelZoo at :
+
+https://pytorch.org/docs/stable/torchvision/models.html
+
+A ResNeXt101 model pre-trained on ImageNet can be downdloaded at:
+
+https://drive.google.com/open?id=1EDUcaGNiakWO9Xvk9kWgkkcnTYZ6VQoT
+
+Please download this pre-trained ResNeXt101 model to the ```RESNEXT''' folder.
