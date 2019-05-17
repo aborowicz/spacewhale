@@ -47,3 +47,15 @@ val,lab,pred,mod,lr
 32,Whale,Whale,resnet-32,0.0009
 0,Whale,Water,resnet-32,0.0009
 95,Water,Whale,resnet-32,0.0009
+984,Water,Water,resnet-32,0.1
+22,Whale,Whale,resnet-32,0.1
+10,Whale,Water,resnet-32,0.1
+406,Water,Whale,resnet-32,0.1
+1373,Water,Water,resnet-32,0.2
+5,Whale,Whale,resnet-32,0.2
+27,Whale,Water,resnet-32,0.2
+17,Water,Whale,resnet-32,0.2
+1279,Water,Water,resnet-32,0.001
+31,Whale,Whale,resnet-32,0.001
+1,Whale,Water,resnet-32,0.001
+111,Water,Whale,resnet-32,0.001
