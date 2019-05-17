@@ -1,5 +1,8 @@
 '''
 SPACEWHALE PROJECT
+Author: A. Borowicz (aborowicz@coa.edu)
+https://github.com/aborowicz/spacewhale
+
 This script takes outputs from the testing stage: 3 messy CSVs where
 the true labels (whale or water as 0,1), predictions(same), and image
 file paths each have their own CSV. But, since the model takes them 
@@ -7,6 +10,7 @@ as batches, each CSV has 10 columns which are meaningless.
 This can be cleaned into one dataframe, where the cols are labels, 
 predictions, names. Then a confusion matrix is needed.
 '''
+
 library(tidyverse)
 library(ggplot2)
 library(reshape2)
