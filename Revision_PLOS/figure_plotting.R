@@ -5,15 +5,27 @@ cbPalette <- c("#999999", "#E69F00", "#56B4E9", "#009E73", "#CC79A7", "#0072B2",
 ## Load in data
 setwd('C:\\Users\\Starship\\Desktop\\GitHub\\spacewhale\\Revision_PLOS')
 res<-read.csv('train_model_results.csv')
+<<<<<<< HEAD
+=======
+res$LR<-as.factor(res$LR)
+>>>>>>> 7b69cc70080de9ae8c2c89fe06deef9d02f9df07
 res2<-read.csv('test_model_results.csv')
 foldres<-read.csv('Fold10_training_results.csv')
 foldres2<-read.csv('test_fold_results.csv')
 confu_dat<-read.csv('confusion_data.csv')
 
 ### Data wrangling ###
+<<<<<<< HEAD
 res$LR<-as.factor(res$LR)
 res2$LR<-as.factor(res2$LR)
 foldres$model<-factor(foldres$model, levels = c("Fold 1",  "Fold 2" , "Fold 3",  "Fold 4" , "Fold 5" , "Fold 6" , "Fold 7"  ,"Fold 8" , "Fold 9",  "Fold 10"))
+=======
+
+res2$LR<-as.factor(res2$LR)
+foldlist<-c("Fold 1",  "Fold 2" , "Fold 3",  "Fold 4" , "Fold 5" , "Fold 6" , "Fold 7"  ,"Fold 8" , "Fold 9",  "Fold 10")
+foldres$model<-factor(foldres$model, levels = foldlist)
+foldres2$model<-factor(foldres2$model, levels = foldlist)
+>>>>>>> 7b69cc70080de9ae8c2c89fe06deef9d02f9df07
 p<-ggplot(data=res, aes(x=seq(1,length(res$tp))))+
   #geom_point(aes(y=acc, x=seq(1,length(res$tp))))+
   #geom_point(aes(y=tn), color='blue')+
@@ -49,15 +61,27 @@ los_p<-ggplot(data=res, aes(x=epoch))+
   scale_colour_manual(values=cbPalette)
 los_p
 
+<<<<<<< HEAD
 ##################################################
 ### Now plotting the test results for each model #
 ##################################################
 
+=======
+
+##################################################
+### Now plotting the test results for each model #
+##################################################
+#### Figure 4 - Model Performance ################
+>>>>>>> 7b69cc70080de9ae8c2c89fe06deef9d02f9df07
 testres<-ggplot(data=res2, aes(x=prec, y=recall, color=LR, shape=model))+
   #geom_point()+
   theme_minimal()+
   # We jitter the points because some are overlapping
+<<<<<<< HEAD
   geom_jitter(aes(color=LR, shape=model), width=0.0007, size=3)+
+=======
+  geom_jitter(aes(color=LR, shape=model), width=0.001, size=3)+
+>>>>>>> 7b69cc70080de9ae8c2c89fe06deef9d02f9df07
   scale_colour_manual(values=cbPalette) #Use the colorblind palette
 testres
 
@@ -84,16 +108,29 @@ foldtest<-ggplot(data=foldres2, aes(x=prec, y=recall, color=model))+
   #geom_point(size=3)+
   theme_minimal()+
   # Jittering again to separate overlapping pts
+<<<<<<< HEAD
   geom_jitter(aes(), width=0.0002, height=0.0002, size=3)+
+=======
+  geom_jitter(aes(), width=0.0004, height=0.0003, size=4)+
+>>>>>>> 7b69cc70080de9ae8c2c89fe06deef9d02f9df07
   scale_colour_manual(values=cbPalette)+
   labs(x="Precision", y="Recall")
 foldtest
 
+<<<<<<< HEAD
+=======
+ggplot(data=foldres2)+
+  geom_histogram(aes(recall))
+>>>>>>> 7b69cc70080de9ae8c2c89fe06deef9d02f9df07
 ########### Confusion matrix
 
 #############################################################################
 ## Making confusion matrices for the different model runs ###################
 ## c() for each is tp,tn,fp,fn where tp is a true water, tn is a true whale #
+<<<<<<< HEAD
+=======
+## Just change the model and LR to pull out a new conf mat ##################
+>>>>>>> 7b69cc70080de9ae8c2c89fe06deef9d02f9df07
 
 confu_dat$lr<-as.factor(confu_dat$lr)
 confu_dat$lab<-as.factor(confu_dat$lab)
@@ -106,7 +143,11 @@ ggplot(data =  confu_dat[which(confu_dat$mod=='resnet-32' & confu_dat$lr=='9e-04
   theme_bw() + theme(legend.position = "none")+
   xlab("True Class")+
   ylab("Predicted Class")+
+<<<<<<< HEAD
   ggtitle(confu_dat$mod, confu_dat$lr)
+=======
+  #ggtitle(confu_dat$mod, confu_dat$lr)
+>>>>>>> 7b69cc70080de9ae8c2c89fe06deef9d02f9df07
 
 den001<-c(1281,31,1,109)
 den01<-c(1015,28,4,375)
