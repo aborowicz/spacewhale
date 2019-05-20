@@ -13,7 +13,9 @@ confu_dat<-read.csv('confusion_data.csv')
 ### Data wrangling ###
 res$LR<-as.factor(res$LR)
 res2$LR<-as.factor(res2$LR)
-foldres$model<-factor(foldres$model, levels = c("Fold 1",  "Fold 2" , "Fold 3",  "Fold 4" , "Fold 5" , "Fold 6" , "Fold 7"  ,"Fold 8" , "Fold 9",  "Fold 10"))
+foldlist<-c("Fold 1",  "Fold 2" , "Fold 3",  "Fold 4" , "Fold 5" , "Fold 6" , "Fold 7"  ,"Fold 8" , "Fold 9",  "Fold 10")
+foldres$model<-factor(foldres$model, levels = foldlist)
+foldres2$model<-factor(foldres2$model, levels = foldlist)
 p<-ggplot(data=res, aes(x=seq(1,length(res$tp))))+
   #geom_point(aes(y=acc, x=seq(1,length(res$tp))))+
   #geom_point(aes(y=tn), color='blue')+
@@ -49,15 +51,16 @@ los_p<-ggplot(data=res, aes(x=epoch))+
   scale_colour_manual(values=cbPalette)
 los_p
 
+
 ##################################################
 ### Now plotting the test results for each model #
 ##################################################
-
+#### Figure 4 - Model Performance ################
 testres<-ggplot(data=res2, aes(x=prec, y=recall, color=LR, shape=model))+
   #geom_point()+
   theme_minimal()+
   # We jitter the points because some are overlapping
-  geom_jitter(aes(color=LR, shape=model), width=0.0007, size=3)+
+  geom_jitter(aes(color=LR, shape=model), width=0.001, size=3)+
   scale_colour_manual(values=cbPalette) #Use the colorblind palette
 testres
 
@@ -84,16 +87,19 @@ foldtest<-ggplot(data=foldres2, aes(x=prec, y=recall, color=model))+
   #geom_point(size=3)+
   theme_minimal()+
   # Jittering again to separate overlapping pts
-  geom_jitter(aes(), width=0.0002, height=0.0002, size=3)+
+  geom_jitter(aes(), width=0.0004, height=0.0003, size=4)+
   scale_colour_manual(values=cbPalette)+
   labs(x="Precision", y="Recall")
 foldtest
 
+ggplot(data=foldres2)+
+  geom_histogram(aes(recall))
 ########### Confusion matrix
 
 #############################################################################
 ## Making confusion matrices for the different model runs ###################
 ## c() for each is tp,tn,fp,fn where tp is a true water, tn is a true whale #
+## Just change the model and LR to pull out a new conf mat ##################
 
 confu_dat$lr<-as.factor(confu_dat$lr)
 confu_dat$lab<-as.factor(confu_dat$lab)
@@ -106,7 +112,7 @@ ggplot(data =  confu_dat[which(confu_dat$mod=='resnet-32' & confu_dat$lr=='9e-04
   theme_bw() + theme(legend.position = "none")+
   xlab("True Class")+
   ylab("Predicted Class")+
-  ggtitle(confu_dat$mod, confu_dat$lr)
+  #ggtitle(confu_dat$mod, confu_dat$lr)
 
 den001<-c(1281,31,1,109)
 den01<-c(1015,28,4,375)
