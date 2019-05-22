@@ -1,4 +1,5 @@
 ### SPACEWHALE PROJECT
+### S1 File
 ### File: gen_training_patches.py
 ### Alex Borowicz, Grant Humphries
 ### contact: aborowicz@coa.edu

@@ -1,6 +1,7 @@
 library(tidyverse)
 ## Colorblind color palette
 cbPalette <- c("#999999", "#E69F00", "#56B4E9", "#009E73", "#CC79A7", "#0072B2", "#D55E00","#F0E442", "#000000", "#54278f" )
+plottinglines<- c("solid","dashed", "dotted","dotdash","F1")
 
 ## Load in data
 setwd('C:\\Users\\Starship\\Desktop\\GitHub\\spacewhale\\Revision_PLOS')
@@ -16,10 +17,11 @@ confu_dat<-read.csv('confusion_data.csv')
 ### Data wrangling ###
 
 res$LR<-as.factor(res$LR)
+res$model<-factor(res$model, levels=c("resnet-18","resnet-32","resnet-152","densnet"))
 res2$LR<-as.factor(res2$LR)
+res2$model<-factor(res2$model, levels=c("resnet-18","resnet-32","resnet-152","densenet"))
 foldres$model<-factor(foldres$model, levels = c("Fold 1",  "Fold 2" , "Fold 3",  "Fold 4" , "Fold 5" , "Fold 6" , "Fold 7"  ,"Fold 8" , "Fold 9",  "Fold 10"))
 
-res2$LR<-as.factor(res2$LR)
 foldlist<-c("Fold 1",  "Fold 2" , "Fold 3",  "Fold 4" , "Fold 5" , "Fold 6" , "Fold 7"  ,"Fold 8" , "Fold 9",  "Fold 10")
 foldres$model<-factor(foldres$model, levels = foldlist)
 foldres2$model<-factor(foldres2$model, levels = foldlist)
@@ -46,10 +48,12 @@ acc_p<-ggplot(data=res, aes(x=epoch))+
   #geom_line(aes(y=Acc, color=LR))+
   #geom_point(aes(y=Acc, color=LR, shape=model))+
   #geom_line(aes(y=Acc, color=LR, linetype=model), size=1)+
-  geom_line(data=res[which(res$model == 'densenet'),], aes(y=Acc,x=epoch, color=LR), size=1.5)+
-  geom_line(data=res[which(res$model != 'densenet'),], aes(y=Acc,x=epoch, color=LR, linetype=model), size=1)+
+  #geom_line(data=res[which(res$model == 'densenet'),], aes(y=Acc,x=epoch, color=LR), size=1.5)+
+  geom_line(data=res[which(res$model != 'ResneXt'),], aes(y=Acc,x=epoch, color=LR, linetype=model), size=1)+
   theme_minimal()+
-  scale_colour_manual(values=cbPalette)
+  scale_colour_manual(values=cbPalette)+
+  scale_linetype_manual(values=plottinglines)+
+  theme(legend.key.width=unit(1,"cm"))
 acc_p
 
 los_p<-ggplot(data=res, aes(x=epoch))+
@@ -75,8 +79,8 @@ testres<-ggplot(data=res2, aes(x=prec, y=recall, color=LR, shape=model))+
   #geom_point()+
   theme_minimal()+
   # We jitter the points because some are overlapping
-  geom_jitter(aes(color=LR, shape=model), width=0.0007, size=3)+
-  geom_jitter(aes(color=LR, shape=model), width=0.001, size=3)+
+  #geom_jitter(aes(color=LR, shape=model), width=0.0007, size=3)+
+  geom_jitter(aes(color=LR, shape=model), width=0.0015, size=3)+
   scale_colour_manual(values=cbPalette) #Use the colorblind palette
 testres
 
@@ -123,7 +127,7 @@ confu_dat$lr<-as.factor(confu_dat$lr)
 confu_dat$lab<-as.factor(confu_dat$lab)
 confu_dat$pred<-as.factor(confu_dat$pred)
 
-ggplot(data =  confu_dat[which(confu_dat$mod=='resnet-32' & confu_dat$lr=='9e-04'),], aes(x = lab, y = pred)) +
+ggplot(data =  confu_dat[which(confu_dat$mod=='resnet-152' & confu_dat$lr=='0.2'),], aes(x = lab, y = pred)) +
   geom_tile(aes(fill = val), colour="black") +
   geom_text(aes(label = sprintf("%1.0f", val)), vjust = 1) +
   scale_fill_gradient(low = "white", high = "white") +
