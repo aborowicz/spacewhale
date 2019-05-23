@@ -1,4 +1,6 @@
 #######################################################################################################
+#### SPACEWHALE PROJECT
+#### S3 File
 #### Script for testing a pytorch, convolutional neural net, using the pre-trained resnet18 model  ####
 #### Authors:  Hieu Le & Grant Humphries
 #### Date: August 2018

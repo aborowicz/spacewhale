@@ -1,10 +1,12 @@
 ### SPACEWHALE PROJECT
+### S2 File
 ### File: resize_images.py
 ### Alex Borowicz, aborowicz@coa.edu
 ### Find all code at <https://github.com/aborowicz/spacewhale/>
 ###
 ### This script resizes images to meet the standard for the various pytorch models
-### Specifically that they should be 224x224. We had previously tiled them to 32x32
+### Specifically that they should be 224x224 (Densenet). 
+### We had previously tiled them to 32x32
 ### Now we'll basically just stretch them to 224x224 from 32
 ### Adapted from http://effbot.org/imagingbook/introduction.htm
 ### and https://stackoverflow.com/questions/273946/how-do-i-resize-an-image-using-pil-and-maintain-its-aspect-ratio

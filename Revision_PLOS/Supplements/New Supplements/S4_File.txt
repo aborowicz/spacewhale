@@ -1,5 +1,6 @@
 #######################################################################################
 #### SPACEWHALE Project
+#### S4 File
 #### Utility codes that are called for spacewhale
 #### Filename: m_util.py
 #### Authors: Hieu Le, Grant Humphries, Alex Borowicz

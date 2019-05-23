@@ -299,8 +299,13 @@ resnext_101_32x4d = nn.Sequential(  # Sequential,
         nn.Sequential(  # Sequential,
             LambdaMap(lambda x: x,  # ConcatTable,
                       nn.Sequential(  # Sequential,
+<<<<<<< HEAD
+                          nn.Sequential(  # Sequential, 
+                              nn.Conv2d(1024, 512, (1, 1), (1, 1), (1, 1), 1, 1, bias=False),
+=======
                           nn.Sequential(  # Sequential,
                               nn.Conv2d(1024, 512, (1, 1), (1, 1), (0, 0), 1, 1, bias=False),
+>>>>>>> 7b69cc70080de9ae8c2c89fe06deef9d02f9df07
                               nn.BatchNorm2d(512),
                               nn.ReLU(),
                               nn.Conv2d(512, 512, (3, 3), (1, 1), (1, 1), 1, 32, bias=False),

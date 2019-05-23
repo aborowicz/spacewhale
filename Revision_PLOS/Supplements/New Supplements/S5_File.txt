@@ -1,745 +1,122 @@
-##############################################
+#######################################################################################################
 #### SPACEWHALE PROJECT
-#### This builds out the use of ResNeXt101
-#### Filename: RESNEXT/model.py
-#### Hieu Le, May 2019
-#### contact: aborowicz@coa.edu
-#### All code available at https://github.com/aborowicz/spacewhale/
-#### Using resnext requires the model file to be downloaded. Link at git repo above.
-##############################################
+#### S5 File
+#### Script for training a pytorch convolutional neural net
+#### Authors:  Hieu Le, Grant Humphries, Alex Borowicz
+#### Date: May 2019
+#### Filename: training_tester_weighted.py
+#### Contact: aborowicz@coa.edu
+#### All code available at: https://github.com/aborowicz/spacewhale/
+#######################################################################################################
+#### Usage examples (Linux)
+####
+####  $python training_script.py --name MODEL1 --model resnet18 --data_dir /home/ghumphries/spacewhale/data --verbose True --epochs 19
+####
+#######################################################################################################
+#### Setup information
+####    To run this script, ensure that you have your training images inside of a folder called 'train'.
+####    Inside of the train folder, your images must be organized into folders based on the label.  For example: 
+####    ./train/Water - this folder contains only water images in .png format
+####    ./train/Whale - this folder contains only whale images in .png format
+####    IMPORTANT:
+####        The --data_dir argument must point to the folder ABOVE the 'train' folder. For example:
+####        .home/user/spacewhale/fulldata/train/... ->  data_dir usage:  --data_dir /home/user/spacewhale/fulldata
+####
+#######################################################################################################
+### Library imports
+from __future__ import print_function, division
 
 import torch
-from torch import nn as nn
-import os
-from . import resneXt
-class ResNeXt101(nn.Module):
-    def __init__(self,out_nc=2):
-        print(os.getcwd())
-        super(ResNeXt101, self).__init__()
-        #net = resnext_101_32x4d_.resnext_101_32x4d
-        net = resneXt.resnext_101_32x4d
-        ##### Need to download the .pth file first #####
-        resnext_101_32_path = './RESNEXT/resnext_101_32x4d.pth'
-        net.load_state_dict(torch.load(resnext_101_32_path))
-        
-        for param in net.parameters():
-            param.require_grad=False
-        num_features = 8192
-        features=list()
-        features = list(net.children())[:-2] # Remove the last layer
-        features.extend([nn.Conv2d(2048, out_nc, kernel_size=(2, 2), stride=(1, 1), padding=(0, 0), bias=True)])
-        self.net = nn.Sequential(*features) # Replace the model classifier
-        
-    def forward(self, x):
-        return torch.squeeze(self.net(x))
-		
-### Test shape here:		
-if __name__=="__main__":
-    a = ResNeXt101()
-    b=torch.rand(3,3,256,256)
-    k= a(b)
-    print(k.shape)
-	
-	
-#####################################################
-### SPACEWHALE PROJECT
-### Filename: RESNEXT/resneXt.py
-### Hieu Le, May 2019
-### Contact: aborowicz@coa.edu
-### All code available at https://github.com/aborowicz/spacewhale/
-###
-### Here we lay out the convolutions inside the Resnext model
-### This is called by RESNEXT/model.py
-#####################################################
-
-
-from functools import reduce
-
 import torch.nn as nn
+import torch.optim as optim
+from torch.optim import lr_scheduler
+import numpy as np
+import torchvision
+from torchvision import datasets, models, transforms
+import time
+import os
+import copy
+from m_util import *
+import argparse
+from model import define_model
+#######################################################################################################
+
+### Create arguments for command line interface
+parser = argparse.ArgumentParser()
+parser.add_argument('--name',type=str)
+parser.add_argument('--model',type=str)
+parser.add_argument('--data_dir',type=str)
+parser.add_argument('--verbose',type=bool,default=False)
+parser.add_argument('--epochs',type=int,default=25)
+
+opt = parser.parse_args()
+
+### Load the spacewhale class
+s = spacewhale(opt)
+
+### This creates a new directory called 'trained model' in the directory you are currently working from in Terminal
+opt.checkpoint = ('./trained_model/'+opt.name)
+s.sdmkdir(opt.checkpoint)
+
+#Preparing the data
+data_dir = opt.data_dir
+print('######################################################################################################')
+print('WELCOME TO SPACEWHALE!')
+print('######################################################################################################')
+print('We will now train your model.. please be patient')
+print('Using', opt.model, 'Your trained model will be named', opt.name) 
+print('------------------------------------------------------------------------------')
+
+### This part loads up any folders in the 'train' folder with the label being the name of the folder
+image_datasets = {x: datasets.ImageFolder(os.path.join(data_dir,x),s.data_transforms[x]) for x in ['train']}
+
+### Now we load training data, but we use a weighted sampler because there are more water images than whales
+weights = s.make_weights_for_balanced_classes(image_datasets['train'].imgs, len(image_datasets['train'].classes)) #2= num. of classes
+weights = torch.DoubleTensor(weights)                                       
+sampler = torch.utils.data.sampler.WeightedRandomSampler(weights, len(weights))
+dataloaders = torch.utils.data.DataLoader(image_datasets['train'], batch_size=4, sampler = sampler, num_workers=4)
+
+dataset_sizes = {x: len(image_datasets[x]) for x in ['train']}
+
+print('Your dataset size is: %d'%(dataset_sizes['train']))
+class_names = image_datasets['train'].classes
+print('You have',str(len(class_names)),'classes in your dataset')
+
+print('------------------------------------------------------------------------------')
+print('Labels for the dataset are:')
+print(class_names[0] + ' = 0')
+print(class_names[1] + ' = 1')
+print('------------------------------------------------------------------------------')
+### This sets the device (if cuda is installed properly, it will send the training data to the gpu)
+device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+dev = ("gpu" if torch.cuda.is_available() else "cpu")
+print('Data loaded into', dev)
+print('------------------------------------------------------------------------------')
+
+######################################################################################################################
+### This part defines the model we're going to use
+### First it downloads the pretrained resnet model (if we dont' have it) from modelZoo
+### We count the number of features in the model and then replace the last layer with a linear layer so we can map our own classes
+### The model is sent to the gpu and we then opt to use CrossEntropy as the loss function
+### The optimizer is set as stochastic gradient descent with a learning rate of 0.001
+### We then set the learning rate to decay every 7 epochs 
+
+### Here we can put in other available models
+model_ft = define_model(name = opt.model)
+model_ft = model_ft.to(device)
 
 
-class LambdaBase(nn.Sequential):
-    def __init__(self, fn, *args):
-        super(LambdaBase, self).__init__(*args)
-        self.lambda_func = fn
+criterion = nn.CrossEntropyLoss()
+optimizer_ft = optim.SGD(model_ft.parameters(), lr=0.2, momentum=0.9)
+exp_lr_scheduler = lr_scheduler.StepLR(optimizer_ft, step_size=7, gamma=0.1)
 
-    def forward_prepare(self, input):
-        output = []
-        for module in self._modules.values():
-            output.append(module(input))
-        return output if output else input
+### If the verbose option is set, then print out the model
+if opt.verbose:
+    print(model_ft)
 
+######################################################################################################################
+### Run the train_model function from the spacewhale class
 
-class Lambda(LambdaBase):
-    def forward(self, input):
-        return self.lambda_func(self.forward_prepare(input))
+model_ft = s.train_model(opt, device, dataset_sizes, dataloaders, model_ft, criterion, optimizer_ft, exp_lr_scheduler, num_epochs=opt.epochs)
 
-
-class LambdaMap(LambdaBase):
-    def forward(self, input):
-        return list(map(self.lambda_func, self.forward_prepare(input)))
-
-
-class LambdaReduce(LambdaBase):
-    def forward(self, input):
-        return reduce(self.lambda_func, self.forward_prepare(input))
-
-
-resnext_101_32x4d = nn.Sequential(  # Sequential,
-    nn.Conv2d(3, 64, (7, 7), (2, 2), (3, 3), 1, 1, bias=False),
-    nn.BatchNorm2d(64),
-    nn.ReLU(),
-    nn.MaxPool2d((3, 3), (2, 2), (1, 1)),
-    nn.Sequential(  # Sequential,
-        nn.Sequential(  # Sequential,
-            LambdaMap(lambda x: x,  # ConcatTable,
-                      nn.Sequential(  # Sequential,
-                          nn.Sequential(  # Sequential,
-                              nn.Conv2d(64, 128, (1, 1), (1, 1), (0, 0), 1, 1, bias=False),
-                              nn.BatchNorm2d(128),
-                              nn.ReLU(),
-                              nn.Conv2d(128, 128, (3, 3), (1, 1), (1, 1), 1, 32, bias=False),
-                              nn.BatchNorm2d(128),
-                              nn.ReLU(),
-                          ),
-                          nn.Conv2d(128, 256, (1, 1), (1, 1), (0, 0), 1, 1, bias=False),
-                          nn.BatchNorm2d(256),
-                      ),
-                      nn.Sequential(  # Sequential,
-                          nn.Conv2d(64, 256, (1, 1), (1, 1), (0, 0), 1, 1, bias=False),
-                          nn.BatchNorm2d(256),
-                      ),
-                      ),
-            LambdaReduce(lambda x, y: x + y),  # CAddTable,
-            nn.ReLU(),
-        ),
-        nn.Sequential(  # Sequential,
-            LambdaMap(lambda x: x,  # ConcatTable,
-                      nn.Sequential(  # Sequential,
-                          nn.Sequential(  # Sequential,
-                              nn.Conv2d(256, 128, (1, 1), (1, 1), (0, 0), 1, 1, bias=False),
-                              nn.BatchNorm2d(128),
-                              nn.ReLU(),
-                              nn.Conv2d(128, 128, (3, 3), (1, 1), (1, 1), 1, 32, bias=False),
-                              nn.BatchNorm2d(128),
-                              nn.ReLU(),
-                          ),
-                          nn.Conv2d(128, 256, (1, 1), (1, 1), (0, 0), 1, 1, bias=False),
-                          nn.BatchNorm2d(256),
-                      ),
-                      Lambda(lambda x: x),  # Identity,
-                      ),
-            LambdaReduce(lambda x, y: x + y),  # CAddTable,
-            nn.ReLU(),
-        ),
-        nn.Sequential(  # Sequential,
-            LambdaMap(lambda x: x,  # ConcatTable,
-                      nn.Sequential(  # Sequential,
-                          nn.Sequential(  # Sequential,
-                              nn.Conv2d(256, 128, (1, 1), (1, 1), (0, 0), 1, 1, bias=False),
-                              nn.BatchNorm2d(128),
-                              nn.ReLU(),
-                              nn.Conv2d(128, 128, (3, 3), (1, 1), (1, 1), 1, 32, bias=False),
-                              nn.BatchNorm2d(128),
-                              nn.ReLU(),
-                          ),
-                          nn.Conv2d(128, 256, (1, 1), (1, 1), (0, 0), 1, 1, bias=False),
-                          nn.BatchNorm2d(256),
-                      ),
-                      Lambda(lambda x: x),  # Identity,
-                      ),
-            LambdaReduce(lambda x, y: x + y),  # CAddTable,
-            nn.ReLU(),
-        ),
-    ),
-    nn.Sequential(  # Sequential,
-        nn.Sequential(  # Sequential,
-            LambdaMap(lambda x: x,  # ConcatTable,
-                      nn.Sequential(  # Sequential,
-                          nn.Sequential(  # Sequential,
-                              nn.Conv2d(256, 256, (1, 1), (1, 1), (0, 0), 1, 1, bias=False),
-                              nn.BatchNorm2d(256),
-                              nn.ReLU(),
-                              nn.Conv2d(256, 256, (3, 3), (2, 2), (1, 1), 1, 32, bias=False),
-                              nn.BatchNorm2d(256),
-                              nn.ReLU(),
-                          ),
-                          nn.Conv2d(256, 512, (1, 1), (1, 1), (0, 0), 1, 1, bias=False),
-                          nn.BatchNorm2d(512),
-                      ),
-                      nn.Sequential(  # Sequential,
-                          nn.Conv2d(256, 512, (1, 1), (2, 2), (0, 0), 1, 1, bias=False),
-                          nn.BatchNorm2d(512),
-                      ),
-                      ),
-            LambdaReduce(lambda x, y: x + y),  # CAddTable,
-            nn.ReLU(),
-        ),
-        nn.Sequential(  # Sequential,
-            LambdaMap(lambda x: x,  # ConcatTable,
-                      nn.Sequential(  # Sequential,
-                          nn.Sequential(  # Sequential,
-                              nn.Conv2d(512, 256, (1, 1), (1, 1), (0, 0), 1, 1, bias=False),
-                              nn.BatchNorm2d(256),
-                              nn.ReLU(),
-                              nn.Conv2d(256, 256, (3, 3), (1, 1), (1, 1), 1, 32, bias=False),
-                              nn.BatchNorm2d(256),
-                              nn.ReLU(),
-                          ),
-                          nn.Conv2d(256, 512, (1, 1), (1, 1), (0, 0), 1, 1, bias=False),
-                          nn.BatchNorm2d(512),
-                      ),
-                      Lambda(lambda x: x),  # Identity,
-                      ),
-            LambdaReduce(lambda x, y: x + y),  # CAddTable,
-            nn.ReLU(),
-        ),
-        nn.Sequential(  # Sequential,
-            LambdaMap(lambda x: x,  # ConcatTable,
-                      nn.Sequential(  # Sequential,
-                          nn.Sequential(  # Sequential,
-                              nn.Conv2d(512, 256, (1, 1), (1, 1), (0, 0), 1, 1, bias=False),
-                              nn.BatchNorm2d(256),
-                              nn.ReLU(),
-                              nn.Conv2d(256, 256, (3, 3), (1, 1), (1, 1), 1, 32, bias=False),
-                              nn.BatchNorm2d(256),
-                              nn.ReLU(),
-                          ),
-                          nn.Conv2d(256, 512, (1, 1), (1, 1), (0, 0), 1, 1, bias=False),
-                          nn.BatchNorm2d(512),
-                      ),
-                      Lambda(lambda x: x),  # Identity,
-                      ),
-            LambdaReduce(lambda x, y: x + y),  # CAddTable,
-            nn.ReLU(),
-        ),
-        nn.Sequential(  # Sequential,
-            LambdaMap(lambda x: x,  # ConcatTable,
-                      nn.Sequential(  # Sequential,
-                          nn.Sequential(  # Sequential,
-                              nn.Conv2d(512, 256, (1, 1), (1, 1), (0, 0), 1, 1, bias=False),
-                              nn.BatchNorm2d(256),
-                              nn.ReLU(),
-                              nn.Conv2d(256, 256, (3, 3), (1, 1), (1, 1), 1, 32, bias=False),
-                              nn.BatchNorm2d(256),
-                              nn.ReLU(),
-                          ),
-                          nn.Conv2d(256, 512, (1, 1), (1, 1), (0, 0), 1, 1, bias=False),
-                          nn.BatchNorm2d(512),
-                      ),
-                      Lambda(lambda x: x),  # Identity,
-                      ),
-            LambdaReduce(lambda x, y: x + y),  # CAddTable,
-            nn.ReLU(),
-        ),
-    ),
-    nn.Sequential(  # Sequential,
-        nn.Sequential(  # Sequential,
-            LambdaMap(lambda x: x,  # ConcatTable,
-                      nn.Sequential(  # Sequential,
-                          nn.Sequential(  # Sequential,
-                              nn.Conv2d(512, 512, (1, 1), (1, 1), (0, 0), 1, 1, bias=False),
-                              nn.BatchNorm2d(512),
-                              nn.ReLU(),
-                              nn.Conv2d(512, 512, (3, 3), (2, 2), (1, 1), 1, 32, bias=False),
-                              nn.BatchNorm2d(512),
-                              nn.ReLU(),
-                          ),
-                          nn.Conv2d(512, 1024, (1, 1), (1, 1), (0, 0), 1, 1, bias=False),
-                          nn.BatchNorm2d(1024),
-                      ),
-                      nn.Sequential(  # Sequential,
-                          nn.Conv2d(512, 1024, (1, 1), (2, 2), (0, 0), 1, 1, bias=False),
-                          nn.BatchNorm2d(1024),
-                      ),
-                      ),
-            LambdaReduce(lambda x, y: x + y),  # CAddTable,
-            nn.ReLU(),
-        ),
-        nn.Sequential(  # Sequential,
-            LambdaMap(lambda x: x,  # ConcatTable,
-                      nn.Sequential(  # Sequential,
-                          nn.Sequential(  # Sequential,
-                              nn.Conv2d(1024, 512, (1, 1), (1, 1), (0, 0), 1, 1, bias=False),
-                              nn.BatchNorm2d(512),
-                              nn.ReLU(),
-                              nn.Conv2d(512, 512, (3, 3), (1, 1), (1, 1), 1, 32, bias=False),
-                              nn.BatchNorm2d(512),
-                              nn.ReLU(),
-                          ),
-                          nn.Conv2d(512, 1024, (1, 1), (1, 1), (0, 0), 1, 1, bias=False),
-                          nn.BatchNorm2d(1024),
-                      ),
-                      Lambda(lambda x: x),  # Identity,
-                      ),
-            LambdaReduce(lambda x, y: x + y),  # CAddTable,
-            nn.ReLU(),
-        ),
-        nn.Sequential(  # Sequential,
-            LambdaMap(lambda x: x,  # ConcatTable,
-                      nn.Sequential(  # Sequential,
-                          nn.Sequential(  # Sequential,
-                              nn.Conv2d(1024, 512, (1, 1), (1, 1), (0, 0), 1, 1, bias=False),
-                              nn.BatchNorm2d(512),
-                              nn.ReLU(),
-                              nn.Conv2d(512, 512, (3, 3), (1, 1), (1, 1), 1, 32, bias=False),
-                              nn.BatchNorm2d(512),
-                              nn.ReLU(),
-                          ),
-                          nn.Conv2d(512, 1024, (1, 1), (1, 1), (0, 0), 1, 1, bias=False),
-                          nn.BatchNorm2d(1024),
-                      ),
-                      Lambda(lambda x: x),  # Identity,
-                      ),
-            LambdaReduce(lambda x, y: x + y),  # CAddTable,
-            nn.ReLU(),
-        ),
-        nn.Sequential(  # Sequential,
-            LambdaMap(lambda x: x,  # ConcatTable,
-                      nn.Sequential(  # Sequential,
-                          nn.Sequential(  # Sequential,
-                              nn.Conv2d(1024, 512, (1, 1), (1, 1), (0, 0), 1, 1, bias=False),
-                              nn.BatchNorm2d(512),
-                              nn.ReLU(),
-                              nn.Conv2d(512, 512, (3, 3), (1, 1), (1, 1), 1, 32, bias=False),
-                              nn.BatchNorm2d(512),
-                              nn.ReLU(),
-                          ),
-                          nn.Conv2d(512, 1024, (1, 1), (1, 1), (0, 0), 1, 1, bias=False),
-                          nn.BatchNorm2d(1024),
-                      ),
-                      Lambda(lambda x: x),  # Identity,
-                      ),
-            LambdaReduce(lambda x, y: x + y),  # CAddTable,
-            nn.ReLU(),
-        ),
-        nn.Sequential(  # Sequential,
-            LambdaMap(lambda x: x,  # ConcatTable,
-                      nn.Sequential(  # Sequential,
-                          nn.Sequential(  # Sequential,
-                              nn.Conv2d(1024, 512, (1, 1), (1, 1), (0, 0), 1, 1, bias=False),
-                              nn.BatchNorm2d(512),
-                              nn.ReLU(),
-                              nn.Conv2d(512, 512, (3, 3), (1, 1), (1, 1), 1, 32, bias=False),
-                              nn.BatchNorm2d(512),
-                              nn.ReLU(),
-                          ),
-                          nn.Conv2d(512, 1024, (1, 1), (1, 1), (0, 0), 1, 1, bias=False),
-                          nn.BatchNorm2d(1024),
-                      ),
-                      Lambda(lambda x: x),  # Identity,
-                      ),
-            LambdaReduce(lambda x, y: x + y),  # CAddTable,
-            nn.ReLU(),
-        ),
-        nn.Sequential(  # Sequential,
-            LambdaMap(lambda x: x,  # ConcatTable,
-                      nn.Sequential(  # Sequential,
-                          nn.Sequential(  # Sequential,
-                              nn.Conv2d(1024, 512, (1, 1), (1, 1), (0, 0), 1, 1, bias=False),
-                              nn.BatchNorm2d(512),
-                              nn.ReLU(),
-                              nn.Conv2d(512, 512, (3, 3), (1, 1), (1, 1), 1, 32, bias=False),
-                              nn.BatchNorm2d(512),
-                              nn.ReLU(),
-                          ),
-                          nn.Conv2d(512, 1024, (1, 1), (1, 1), (0, 0), 1, 1, bias=False),
-                          nn.BatchNorm2d(1024),
-                      ),
-                      Lambda(lambda x: x),  # Identity,
-                      ),
-            LambdaReduce(lambda x, y: x + y),  # CAddTable,
-            nn.ReLU(),
-        ),
-        nn.Sequential(  # Sequential,
-            LambdaMap(lambda x: x,  # ConcatTable,
-                      nn.Sequential(  # Sequential,
-                          nn.Sequential(  # Sequential,
-                              nn.Conv2d(1024, 512, (1, 1), (1, 1), (0, 0), 1, 1, bias=False),
-                              nn.BatchNorm2d(512),
-                              nn.ReLU(),
-                              nn.Conv2d(512, 512, (3, 3), (1, 1), (1, 1), 1, 32, bias=False),
-                              nn.BatchNorm2d(512),
-                              nn.ReLU(),
-                          ),
-                          nn.Conv2d(512, 1024, (1, 1), (1, 1), (0, 0), 1, 1, bias=False),
-                          nn.BatchNorm2d(1024),
-                      ),
-                      Lambda(lambda x: x),  # Identity,
-                      ),
-            LambdaReduce(lambda x, y: x + y),  # CAddTable,
-            nn.ReLU(),
-        ),
-        nn.Sequential(  # Sequential,
-            LambdaMap(lambda x: x,  # ConcatTable,
-                      nn.Sequential(  # Sequential,
-                          nn.Sequential(  # Sequential,
-                              nn.Conv2d(1024, 512, (1, 1), (1, 1), (0, 0), 1, 1, bias=False),
-                              nn.BatchNorm2d(512),
-                              nn.ReLU(),
-                              nn.Conv2d(512, 512, (3, 3), (1, 1), (1, 1), 1, 32, bias=False),
-                              nn.BatchNorm2d(512),
-                              nn.ReLU(),
-                          ),
-                          nn.Conv2d(512, 1024, (1, 1), (1, 1), (0, 0), 1, 1, bias=False),
-                          nn.BatchNorm2d(1024),
-                      ),
-                      Lambda(lambda x: x),  # Identity,
-                      ),
-            LambdaReduce(lambda x, y: x + y),  # CAddTable,
-            nn.ReLU(),
-        ),
-        nn.Sequential(  # Sequential,
-            LambdaMap(lambda x: x,  # ConcatTable,
-                      nn.Sequential(  # Sequential,
-                          nn.Sequential(  # Sequential,
-                              nn.Conv2d(1024, 512, (1, 1), (1, 1), (0, 0), 1, 1, bias=False),
-                              nn.BatchNorm2d(512),
-                              nn.ReLU(),
-                              nn.Conv2d(512, 512, (3, 3), (1, 1), (1, 1), 1, 32, bias=False),
-                              nn.BatchNorm2d(512),
-                              nn.ReLU(),
-                          ),
-                          nn.Conv2d(512, 1024, (1, 1), (1, 1), (0, 0), 1, 1, bias=False),
-                          nn.BatchNorm2d(1024),
-                      ),
-                      Lambda(lambda x: x),  # Identity,
-                      ),
-            LambdaReduce(lambda x, y: x + y),  # CAddTable,
-            nn.ReLU(),
-        ),
-        nn.Sequential(  # Sequential,
-            LambdaMap(lambda x: x,  # ConcatTable,
-                      nn.Sequential(  # Sequential,
-                          nn.Sequential(  # Sequential,
-                              nn.Conv2d(1024, 512, (1, 1), (1, 1), (0, 0), 1, 1, bias=False),
-                              nn.BatchNorm2d(512),
-                              nn.ReLU(),
-                              nn.Conv2d(512, 512, (3, 3), (1, 1), (1, 1), 1, 32, bias=False),
-                              nn.BatchNorm2d(512),
-                              nn.ReLU(),
-                          ),
-                          nn.Conv2d(512, 1024, (1, 1), (1, 1), (0, 0), 1, 1, bias=False),
-                          nn.BatchNorm2d(1024),
-                      ),
-                      Lambda(lambda x: x),  # Identity,
-                      ),
-            LambdaReduce(lambda x, y: x + y),  # CAddTable,
-            nn.ReLU(),
-        ),
-        nn.Sequential(  # Sequential,
-            LambdaMap(lambda x: x,  # ConcatTable,
-                      nn.Sequential(  # Sequential,
-                          nn.Sequential(  # Sequential,
-                              nn.Conv2d(1024, 512, (1, 1), (1, 1), (0, 0), 1, 1, bias=False),
-                              nn.BatchNorm2d(512),
-                              nn.ReLU(),
-                              nn.Conv2d(512, 512, (3, 3), (1, 1), (1, 1), 1, 32, bias=False),
-                              nn.BatchNorm2d(512),
-                              nn.ReLU(),
-                          ),
-                          nn.Conv2d(512, 1024, (1, 1), (1, 1), (0, 0), 1, 1, bias=False),
-                          nn.BatchNorm2d(1024),
-                      ),
-                      Lambda(lambda x: x),  # Identity,
-                      ),
-            LambdaReduce(lambda x, y: x + y),  # CAddTable,
-            nn.ReLU(),
-        ),
-        nn.Sequential(  # Sequential,
-            LambdaMap(lambda x: x,  # ConcatTable,
-                      nn.Sequential(  # Sequential,
-                          nn.Sequential(  # Sequential,
-                              nn.Conv2d(1024, 512, (1, 1), (1, 1), (0, 0), 1, 1, bias=False),
-                              nn.BatchNorm2d(512),
-                              nn.ReLU(),
-                              nn.Conv2d(512, 512, (3, 3), (1, 1), (1, 1), 1, 32, bias=False),
-                              nn.BatchNorm2d(512),
-                              nn.ReLU(),
-                          ),
-                          nn.Conv2d(512, 1024, (1, 1), (1, 1), (0, 0), 1, 1, bias=False),
-                          nn.BatchNorm2d(1024),
-                      ),
-                      Lambda(lambda x: x),  # Identity,
-                      ),
-            LambdaReduce(lambda x, y: x + y),  # CAddTable,
-            nn.ReLU(),
-        ),
-        nn.Sequential(  # Sequential,
-            LambdaMap(lambda x: x,  # ConcatTable,
-                      nn.Sequential(  # Sequential,
-                          nn.Sequential(  # Sequential,
-                              nn.Conv2d(1024, 512, (1, 1), (1, 1), (0, 0), 1, 1, bias=False),
-                              nn.BatchNorm2d(512),
-                              nn.ReLU(),
-                              nn.Conv2d(512, 512, (3, 3), (1, 1), (1, 1), 1, 32, bias=False),
-                              nn.BatchNorm2d(512),
-                              nn.ReLU(),
-                          ),
-                          nn.Conv2d(512, 1024, (1, 1), (1, 1), (0, 0), 1, 1, bias=False),
-                          nn.BatchNorm2d(1024),
-                      ),
-                      Lambda(lambda x: x),  # Identity,
-                      ),
-            LambdaReduce(lambda x, y: x + y),  # CAddTable,
-            nn.ReLU(),
-        ),
-        nn.Sequential(  # Sequential,
-            LambdaMap(lambda x: x,  # ConcatTable,
-                      nn.Sequential(  # Sequential,
-                          nn.Sequential(  # Sequential,
-                              nn.Conv2d(1024, 512, (1, 1), (1, 1), (0, 0), 1, 1, bias=False),
-                              nn.BatchNorm2d(512),
-                              nn.ReLU(),
-                              nn.Conv2d(512, 512, (3, 3), (1, 1), (1, 1), 1, 32, bias=False),
-                              nn.BatchNorm2d(512),
-                              nn.ReLU(),
-                          ),
-                          nn.Conv2d(512, 1024, (1, 1), (1, 1), (0, 0), 1, 1, bias=False),
-                          nn.BatchNorm2d(1024),
-                      ),
-                      Lambda(lambda x: x),  # Identity,
-                      ),
-            LambdaReduce(lambda x, y: x + y),  # CAddTable,
-            nn.ReLU(),
-        ),
-        nn.Sequential(  # Sequential,
-            LambdaMap(lambda x: x,  # ConcatTable,
-                      nn.Sequential(  # Sequential,
-                          nn.Sequential(  # Sequential,
-                              nn.Conv2d(1024, 512, (1, 1), (1, 1), (0, 0), 1, 1, bias=False),
-                              nn.BatchNorm2d(512),
-                              nn.ReLU(),
-                              nn.Conv2d(512, 512, (3, 3), (1, 1), (1, 1), 1, 32, bias=False),
-                              nn.BatchNorm2d(512),
-                              nn.ReLU(),
-                          ),
-                          nn.Conv2d(512, 1024, (1, 1), (1, 1), (0, 0), 1, 1, bias=False),
-                          nn.BatchNorm2d(1024),
-                      ),
-                      Lambda(lambda x: x),  # Identity,
-                      ),
-            LambdaReduce(lambda x, y: x + y),  # CAddTable,
-            nn.ReLU(),
-        ),
-        nn.Sequential(  # Sequential,
-            LambdaMap(lambda x: x,  # ConcatTable,
-                      nn.Sequential(  # Sequential,
-                          nn.Sequential(  # Sequential,
-                              nn.Conv2d(1024, 512, (1, 1), (1, 1), (0, 0), 1, 1, bias=False),
-                              nn.BatchNorm2d(512),
-                              nn.ReLU(),
-                              nn.Conv2d(512, 512, (3, 3), (1, 1), (1, 1), 1, 32, bias=False),
-                              nn.BatchNorm2d(512),
-                              nn.ReLU(),
-                          ),
-                          nn.Conv2d(512, 1024, (1, 1), (1, 1), (0, 0), 1, 1, bias=False),
-                          nn.BatchNorm2d(1024),
-                      ),
-                      Lambda(lambda x: x),  # Identity,
-                      ),
-            LambdaReduce(lambda x, y: x + y),  # CAddTable,
-            nn.ReLU(),
-        ),
-        nn.Sequential(  # Sequential,
-            LambdaMap(lambda x: x,  # ConcatTable,
-                      nn.Sequential(  # Sequential,
-                          nn.Sequential(  # Sequential,
-                              nn.Conv2d(1024, 512, (1, 1), (1, 1), (0, 0), 1, 1, bias=False),
-                              nn.BatchNorm2d(512),
-                              nn.ReLU(),
-                              nn.Conv2d(512, 512, (3, 3), (1, 1), (1, 1), 1, 32, bias=False),
-                              nn.BatchNorm2d(512),
-                              nn.ReLU(),
-                          ),
-                          nn.Conv2d(512, 1024, (1, 1), (1, 1), (0, 0), 1, 1, bias=False),
-                          nn.BatchNorm2d(1024),
-                      ),
-                      Lambda(lambda x: x),  # Identity,
-                      ),
-            LambdaReduce(lambda x, y: x + y),  # CAddTable,
-            nn.ReLU(),
-        ),
-        nn.Sequential(  # Sequential,
-            LambdaMap(lambda x: x,  # ConcatTable,
-                      nn.Sequential(  # Sequential,
-                          nn.Sequential(  # Sequential,
-                              nn.Conv2d(1024, 512, (1, 1), (1, 1), (0, 0), 1, 1, bias=False),
-                              nn.BatchNorm2d(512),
-                              nn.ReLU(),
-                              nn.Conv2d(512, 512, (3, 3), (1, 1), (1, 1), 1, 32, bias=False),
-                              nn.BatchNorm2d(512),
-                              nn.ReLU(),
-                          ),
-                          nn.Conv2d(512, 1024, (1, 1), (1, 1), (0, 0), 1, 1, bias=False),
-                          nn.BatchNorm2d(1024),
-                      ),
-                      Lambda(lambda x: x),  # Identity,
-                      ),
-            LambdaReduce(lambda x, y: x + y),  # CAddTable,
-            nn.ReLU(),
-        ),
-        nn.Sequential(  # Sequential,
-            LambdaMap(lambda x: x,  # ConcatTable,
-                      nn.Sequential(  # Sequential,
-                          nn.Sequential(  # Sequential,
-                              nn.Conv2d(1024, 512, (1, 1), (1, 1), (0, 0), 1, 1, bias=False),
-                              nn.BatchNorm2d(512),
-                              nn.ReLU(),
-                              nn.Conv2d(512, 512, (3, 3), (1, 1), (1, 1), 1, 32, bias=False),
-                              nn.BatchNorm2d(512),
-                              nn.ReLU(),
-                          ),
-                          nn.Conv2d(512, 1024, (1, 1), (1, 1), (0, 0), 1, 1, bias=False),
-                          nn.BatchNorm2d(1024),
-                      ),
-                      Lambda(lambda x: x),  # Identity,
-                      ),
-            LambdaReduce(lambda x, y: x + y),  # CAddTable,
-            nn.ReLU(),
-        ),
-        nn.Sequential(  # Sequential,
-            LambdaMap(lambda x: x,  # ConcatTable,
-                      nn.Sequential(  # Sequential,
-                          nn.Sequential(  # Sequential,
-                              nn.Conv2d(1024, 512, (1, 1), (1, 1), (0, 0), 1, 1, bias=False),
-                              nn.BatchNorm2d(512),
-                              nn.ReLU(),
-                              nn.Conv2d(512, 512, (3, 3), (1, 1), (1, 1), 1, 32, bias=False),
-                              nn.BatchNorm2d(512),
-                              nn.ReLU(),
-                          ),
-                          nn.Conv2d(512, 1024, (1, 1), (1, 1), (0, 0), 1, 1, bias=False),
-                          nn.BatchNorm2d(1024),
-                      ),
-                      Lambda(lambda x: x),  # Identity,
-                      ),
-            LambdaReduce(lambda x, y: x + y),  # CAddTable,
-            nn.ReLU(),
-        ),
-        nn.Sequential(  # Sequential,
-            LambdaMap(lambda x: x,  # ConcatTable,
-                      nn.Sequential(  # Sequential,
-                          nn.Sequential(  # Sequential,
-                              nn.Conv2d(1024, 512, (1, 1), (1, 1), (0, 0), 1, 1, bias=False),
-                              nn.BatchNorm2d(512),
-                              nn.ReLU(),
-                              nn.Conv2d(512, 512, (3, 3), (1, 1), (1, 1), 1, 32, bias=False),
-                              nn.BatchNorm2d(512),
-                              nn.ReLU(),
-                          ),
-                          nn.Conv2d(512, 1024, (1, 1), (1, 1), (0, 0), 1, 1, bias=False),
-                          nn.BatchNorm2d(1024),
-                      ),
-                      Lambda(lambda x: x),  # Identity,
-                      ),
-            LambdaReduce(lambda x, y: x + y),  # CAddTable,
-            nn.ReLU(),
-        ),
-        nn.Sequential(  # Sequential,
-            LambdaMap(lambda x: x,  # ConcatTable,
-                      nn.Sequential(  # Sequential,
-                          nn.Sequential(  # Sequential,
-                              nn.Conv2d(1024, 512, (1, 1), (1, 1), (0, 0), 1, 1, bias=False),
-                              nn.BatchNorm2d(512),
-                              nn.ReLU(),
-                              nn.Conv2d(512, 512, (3, 3), (1, 1), (1, 1), 1, 32, bias=False),
-                              nn.BatchNorm2d(512),
-                              nn.ReLU(),
-                          ),
-                          nn.Conv2d(512, 1024, (1, 1), (1, 1), (0, 0), 1, 1, bias=False),
-                          nn.BatchNorm2d(1024),
-                      ),
-                      Lambda(lambda x: x),  # Identity,
-                      ),
-            LambdaReduce(lambda x, y: x + y),  # CAddTable,
-            nn.ReLU(),
-        ),
-        nn.Sequential(  # Sequential,
-            LambdaMap(lambda x: x,  # ConcatTable,
-                      nn.Sequential(  # Sequential,
-                          nn.Sequential(  # Sequential,
-                              nn.Conv2d(1024, 512, (1, 1), (1, 1), (0, 0), 1, 1, bias=False),
-                              nn.BatchNorm2d(512),
-                              nn.ReLU(),
-                              nn.Conv2d(512, 512, (3, 3), (1, 1), (1, 1), 1, 32, bias=False),
-                              nn.BatchNorm2d(512),
-                              nn.ReLU(),
-                          ),
-                          nn.Conv2d(512, 1024, (1, 1), (1, 1), (0, 0), 1, 1, bias=False),
-                          nn.BatchNorm2d(1024),
-                      ),
-                      Lambda(lambda x: x),  # Identity,
-                      ),
-            LambdaReduce(lambda x, y: x + y),  # CAddTable,
-            nn.ReLU(),
-        ),
-    ),
-    nn.Sequential(  # Sequential,
-        nn.Sequential(  # Sequential,
-            LambdaMap(lambda x: x,  # ConcatTable,
-                      nn.Sequential(  # Sequential,
-                          nn.Sequential(  # Sequential,
-                              nn.Conv2d(1024, 1024, (1, 1), (1, 1), (0, 0), 1, 1, bias=False),
-                              nn.BatchNorm2d(1024),
-                              nn.ReLU(),
-                              nn.Conv2d(1024, 1024, (3, 3), (2, 2), (1, 1), 1, 32, bias=False),
-                              nn.BatchNorm2d(1024),
-                              nn.ReLU(),
-                          ),
-                          nn.Conv2d(1024, 2048, (1, 1), (1, 1), (0, 0), 1, 1, bias=False),
-                          nn.BatchNorm2d(2048),
-                      ),
-                      nn.Sequential(  # Sequential,
-                          nn.Conv2d(1024, 2048, (1, 1), (2, 2), (0, 0), 1, 1, bias=False),
-                          nn.BatchNorm2d(2048),
-                      ),
-                      ),
-            LambdaReduce(lambda x, y: x + y),  # CAddTable,
-            nn.ReLU(),
-        ),
-        nn.Sequential(  # Sequential,
-            LambdaMap(lambda x: x,  # ConcatTable,
-                      nn.Sequential(  # Sequential,
-                          nn.Sequential(  # Sequential,
-                              nn.Conv2d(2048, 1024, (1, 1), (1, 1), (0, 0), 1, 1, bias=False),
-                              nn.BatchNorm2d(1024),
-                              nn.ReLU(),
-                              nn.Conv2d(1024, 1024, (3, 3), (1, 1), (1, 1), 1, 32, bias=False),
-                              nn.BatchNorm2d(1024),
-                              nn.ReLU(),
-                          ),
-                          nn.Conv2d(1024, 2048, (1, 1), (1, 1), (0, 0), 1, 1, bias=False),
-                          nn.BatchNorm2d(2048),
-                      ),
-                      Lambda(lambda x: x),  # Identity,
-                      ),
-            LambdaReduce(lambda x, y: x + y),  # CAddTable,
-            nn.ReLU(),
-        ),
-        nn.Sequential(  # Sequential,
-            LambdaMap(lambda x: x,  # ConcatTable,
-                      nn.Sequential(  # Sequential,
-                          nn.Sequential(  # Sequential,
-                              nn.Conv2d(2048, 1024, (1, 1), (1, 1), (0, 0), 1, 1, bias=False),
-                              nn.BatchNorm2d(1024),
-                              nn.ReLU(),
-                              nn.Conv2d(1024, 1024, (3, 3), (1, 1), (1, 1), 1, 32, bias=False),
-                              nn.BatchNorm2d(1024),
-                              nn.ReLU(),
-                          ),
-                          nn.Conv2d(1024, 2048, (1, 1), (1, 1), (0, 0), 1, 1, bias=False),
-                          nn.BatchNorm2d(2048),
-                      ),
-                      Lambda(lambda x: x),  # Identity,
-                      ),
-            LambdaReduce(lambda x, y: x + y),  # CAddTable,
-            nn.ReLU(),
-        ),
-    ),
-    nn.AvgPool2d((7, 7), (1, 1)),
-    Lambda(lambda x: x.view(x.size(0), -1)),  # View,
-    nn.Sequential(Lambda(lambda x: x.view(1, -1) if 1 == len(x.size()) else x), nn.Linear(2048, 1000)),  # Linear,
-)
-
-
+######################################################################################################################
