@@ -41,6 +41,21 @@ p
 ### There's a diff color for each LR, diff line type for each architect
 
 #####################################
+### Plotting the LR experiment ######
+### Show each LR for Res18 ##########
+### "Effect of Learning rate on #####
+### Training accuracy" ##############
+#####################################
+
+lr_p<-ggplot(data=res[which(res$model == "resnet-18"),], aes(x=epoch))+
+  geom_line(aes(y=Acc, color=LR, linetype=model), size=1, alpha=0.6)+
+  theme_minimal()+
+  scale_colour_manual(values=cbPalette)+
+  scale_linetype_manual(values=plottinglines)+
+  theme(legend.key.width=unit(1,"cm"))
+
+lr_p
+#####################################
 ### Model training results ##########
 ### We're plotting accuracy and loss#
 #####################################
@@ -49,7 +64,7 @@ acc_p<-ggplot(data=res, aes(x=epoch))+
   #geom_point(aes(y=Acc, color=LR, shape=model))+
   #geom_line(aes(y=Acc, color=LR, linetype=model), size=1)+
   #geom_line(data=res[which(res$model == 'densenet'),], aes(y=Acc,x=epoch, color=LR), size=1.5)+
-  geom_line(data=res[which(res$model != 'ResneXt'),], aes(y=Acc,x=epoch, color=LR, linetype=model), size=1)+
+  geom_line(data=res[which(res$model != 'ResneXt'),], aes(y=Acc,x=epoch, color=LR), size=1)+
   theme_minimal()+
   scale_colour_manual(values=cbPalette)+
   scale_linetype_manual(values=plottinglines)+
