@@ -33,7 +33,7 @@ import matplotlib.pyplot as plt
 import time
 import os
 import copy
-from m_util import *
+from m_util2 import *
 import argparse
 from model import define_model
 #######################################################################################################
@@ -49,7 +49,7 @@ parser.add_argument('--epochs',type=int,default=25)
 opt = parser.parse_args()
 
 ### Load the spacewhale class
-s = spacewhale()
+s = spacewhale(opt)
 
 ### This creates a new directory called 'trained model' in the directory you are currently working from in Terminal
 opt.checkpoint = ('./trained_model/'+opt.name)
@@ -79,7 +79,7 @@ sampler = torch.utils.data.sampler.WeightedRandomSampler(weights, len(weights))
 #print(len(image_datasets.imgs))
 #print(weights)
 #dataloaders = torch.utils.data.DataLoader(image_datasets, batch_size=4, sampler = sampler, num_workers=4)
-dataloaders = torch.utils.data.DataLoader(image_datasets['train'], batch_size=4, sampler = sampler, num_workers=4)
+dataloaders = torch.utils.data.DataLoader(image_datasets['train'], batch_size=32, sampler = sampler, num_workers=4, drop_last = True)
 
 #dataloaders = torch.utils.data.DataLoader
 print(dataloaders)
@@ -117,7 +117,7 @@ model_ft = model_ft.to(device)
 
 
 criterion = nn.CrossEntropyLoss()
-optimizer_ft = optim.SGD(model_ft.parameters(), lr=0.2, momentum=0.9)
+optimizer_ft = optim.SGD(model_ft.parameters(), lr=0.0008, momentum=0.9)
 exp_lr_scheduler = lr_scheduler.StepLR(optimizer_ft, step_size=7, gamma=0.1)
 
 ### If the verbose option is set, then print out the model
