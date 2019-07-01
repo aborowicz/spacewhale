@@ -36,16 +36,14 @@ from torch.optim import lr_scheduler
 import numpy as np
 import torchvision
 from torchvision import datasets, models, transforms
-from m_util import *
+from m_util2 import *
 import matplotlib.pyplot as plt
 import time
 import os
 import copy
 import argparse
 from model import define_model
-
-s = spacewhale()
-
+from collections import OrderedDict
 
 parse = argparse.ArgumentParser()
 parse.add_argument('--data_dir')
@@ -53,6 +51,7 @@ parse.add_argument('--model')
 parse.add_argument('--modtype', type=str)
 parse.add_argument('--epoch',type=int,default=24)
 opt = parse.parse_args()
+s = spacewhale(opt)
 
 epoch_to_use = 'epoch_'+str(opt.epoch)+'.pth' #Added this
 trained_model = os.path.join('./trained_model',opt.model,epoch_to_use)#Added here
@@ -70,6 +69,9 @@ data_dir = opt.data_dir
 
 test_transforms = s.data_transforms['test']
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+dev = ("gpu" if torch.cuda.is_available() else "cpu")
+print('Data loaded into', dev)
+
 torch.set_default_tensor_type('torch.cuda.FloatTensor')
 
 #model_ft = torchvision.models.resnet18(pretrained=True)
@@ -80,16 +82,24 @@ model_ft = define_model(name = opt.modtype)
 #model_ft.fc = nn.Linear(num_ftrs, 2)
 
 model_ft = model_ft.to(device)
-
-model_ft.load_state_dict(torch.load(trained_model))
+print(os.getcwd())
+if opt.modtype == 'resneXt':
+    state_dict=torch.load(trained_model)
+    temp_state_dict=OrderedDict()
+    for k,v in state_dict.items():
+        name = k[4:] # remove `net.`
+        temp_state_dict[name] = v
+    model_ft.load_state_dict(temp_state_dict)
+else:
+    model_ft.load_state_dict(torch.load(trained_model))
 model_ft.eval()
 
 
 #image_dataset = datasets.ImageFolder(data_dir, s.data_transforms['test'])
 image_datasets = ImageFolderWithPaths(data_dir, s.data_transforms['test'])
 #image_datasets = datasets.ImageFolder(data_dir, s.data_transforms['test'])
-dataloaders = torch.utils.data.DataLoader(image_datasets, batch_size=10,shuffle=False, num_workers=16)
-
+dataloaders = torch.utils.data.DataLoader(image_datasets, batch_size=32,shuffle=False, num_workers=4,drop_last = True)
+print(dataloaders)
 
 class_names = image_datasets.classes
 keylist = [x for x in range(len(class_names))]
