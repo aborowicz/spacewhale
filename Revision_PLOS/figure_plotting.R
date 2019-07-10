@@ -1,23 +1,28 @@
-library(tidyverse)
-## Colorblind color palette
-cbPalette <- c("#999999", "#E69F00", "#56B4E9", "#009E73", "#CC79A7", "#0072B2", "#D55E00","#F0E442", "#000000", "#54278f" )
+library(tidyverse) #for ggplot
+library(gridExtra) #to align plots
+## Colorblind color palette, plus extras
+cbPalette <- c("#999999", "#E69F00", "#56B4E9", "#009E73", "#CC79A7", "#0072B2", "#D55E00","#F0E442", "#000000", "#54278f", "grey62" )
+## Layout linetypes for plotting
 plottinglines<- c("solid","dashed", "dotted","dotdash","F1")
 
 ## Load in data
 setwd('C:\\Users\\Starship\\Desktop\\GitHub\\spacewhale\\Revision_PLOS')
 setwd('C:\\Users\\Alex\\Documents\\GitHub\\spacewhale\\Revision_PLOS')
-res<-read.csv('train_model_results.csv')
-res$LR<-as.factor(res$LR)
+#res: A CSV of the acc and loss of all models. Cols: epoch, acc, loss, LR, model (e.g. resnet-152)
+res<-read.csv('train_model_results.csv') 
+res$LR<-as.factor(res$LR) #Make LR a factor for plotting
 
+##res2: the results of testing models. cols: prec, recall, F1, model, LR, epoch
 res2<-read.csv('test_model_results.csv')
 foldres<-read.csv('Fold10_training_results.csv')
 foldres2<-read.csv('test_fold_results.csv')
 confu_dat<-read.csv('confusion_data.csv')
-
+tt_data<-read.csv('res152_traintest_curve.csv')
+tt_data$mode<-as.factor(tt_data$mode)
 ### Data wrangling ###
 
 res$LR<-as.factor(res$LR)
-res$model<-factor(res$model, levels=c("resnet-18","resnet-32","resnet-152","densnet"))
+res$model<-factor(res$model, levels=c("resnet-18","resnet-32","resnet-152","densenet"))
 res2$LR<-as.factor(res2$LR)
 res2$model<-factor(res2$model, levels=c("resnet-18","resnet-32","resnet-152","densenet"))
 foldres$model<-factor(foldres$model, levels = c("Fold 1",  "Fold 2" , "Fold 3",  "Fold 4" , "Fold 5" , "Fold 6" , "Fold 7"  ,"Fold 8" , "Fold 9",  "Fold 10"))
@@ -47,7 +52,7 @@ p
 ### Training accuracy" ##############
 #####################################
 
-lr_p<-ggplot(data=res[which(res$model == "resnet-18"),], aes(x=epoch))+
+lr_p<-ggplot(data=res[which(res$model == "resnet-152"),], aes(x=epoch))+
   geom_line(aes(y=Acc, color=LR, linetype=model), size=1, alpha=0.6)+
   theme_minimal()+
   scale_colour_manual(values=cbPalette)+
@@ -58,17 +63,22 @@ lr_p
 #####################################
 ### Model training results ##########
 ### We're plotting accuracy and loss#
+### Each LR is a color. Can add     #
+### linetype for model type         #
 #####################################
 acc_p<-ggplot(data=res, aes(x=epoch))+
   #geom_line(aes(y=Acc, color=LR))+
   #geom_point(aes(y=Acc, color=LR, shape=model))+
   #geom_line(aes(y=Acc, color=LR, linetype=model), size=1)+
   #geom_line(data=res[which(res$model == 'densenet'),], aes(y=Acc,x=epoch, color=LR), size=1.5)+
-  geom_line(data=res[which(res$model != 'ResneXt'),], aes(y=Acc,x=epoch, color=LR), size=1)+
+  #geom_line(data=res[which(res$model != 'ResneXt'),], aes(y=Acc,x=epoch, color=LR, linetype=model), size=1)+
+  geom_line(data=res[which(res$model == 'resnet-152'),], aes(y=Acc, x=epoch, color=LR), size=1)+#, alpha=0.6)+
   theme_minimal()+
   scale_colour_manual(values=cbPalette)+
   scale_linetype_manual(values=plottinglines)+
-  theme(legend.key.width=unit(1,"cm"))
+  theme(legend.key.width=unit(1,"cm"))+
+  labs(x="Epoch", y="Accuracy")+
+  lims(y=c(0.5,1))
 acc_p
 
 los_p<-ggplot(data=res, aes(x=epoch))+
@@ -81,10 +91,30 @@ los_p
 
 
 ##################################################
-### Now plotting the test results for each model #
+### Training Testing Curve - we compare acc ######
+### Across the epochs to demonstrate overfit #####
 ##################################################
+##Full Acc - train/test
+##Water Acc - train test
+## Whale acc - train/test
+## Train /test color
+## Full - solid
+## Water/whale - dot/dash
 
+tt_curve<-ggplot(data=tt_data, aes(x=epoch))+
+  geom_line(aes(y=acc, color=mode), size=1)+
+  geom_line(aes(y=wat_acc, color=mode), linetype=4, size=1)+
+  geom_line(aes(y=whale_acc, color=mode), linetype=3, size=1)+
+  theme_minimal()+
+  scale_colour_manual(values=cbPalette)+
+  labs(x="Epoch",y="Accuracy")+
+  lims(y=c(0.5,1))
+  
+tt_curve
 
+# Figure 3 - put acc plot and train/test curve together
+# In Illustrator, font, size, labels, make acc bars transpar
+grid.arrange(acc_p, tt_curve, ncol=2)
 
 ##################################################
 ### Now plotting the test results for each model #

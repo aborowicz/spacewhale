@@ -50,4 +50,14 @@ for(i in 1:10){
 file.copy(water_new[which(water_new[,1] != i),1], "10_fold//fold_1//train//water")
 
 
+### Now set up a smaller, more balanced training set.
+### So we want all the whales, and an equal number of waters
+
+bal_set_water<-sample(water, length(whale), replace=FALSE)
+
+setwd('C:\\Users\\Starship\\Downloads\\temp\\tiled_air32\\train\\water')
+file.copy(bal_set_water, "..//..//..//balanced_air32//train//water")
+setwd('C:\\Users\\Starship\\Downloads\\temp\\tiled_air32\\train\\whale')
+file.copy(whale, "..//..//..//balanced_air32//train//whale")
+
 
