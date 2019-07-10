@@ -45,6 +45,7 @@ parser.add_argument('--model',type=str)
 parser.add_argument('--data_dir',type=str)
 parser.add_argument('--verbose',type=bool,default=False)
 parser.add_argument('--epochs',type=int,default=25)
+parser.add_argument('--lr', type=float)
 
 opt = parser.parse_args()
 
@@ -117,7 +118,7 @@ model_ft = model_ft.to(device)
 
 
 criterion = nn.CrossEntropyLoss()
-optimizer_ft = optim.SGD(model_ft.parameters(), lr=0.0008, momentum=0.9)
+optimizer_ft = optim.SGD(model_ft.parameters(), lr=opt.lr, momentum=0.9)
 exp_lr_scheduler = lr_scheduler.StepLR(optimizer_ft, step_size=7, gamma=0.1)
 
 ### If the verbose option is set, then print out the model
@@ -126,6 +127,8 @@ if opt.verbose:
 
 ######################################################################################################################
 ### Run the train_model function from the spacewhale class
+print("Training Model: Learning Rate = ", opt.lr)
+print("Model type: ", opt.model)
 
 model_ft = s.train_model(opt, device, dataset_sizes, dataloaders, model_ft, criterion, optimizer_ft, exp_lr_scheduler, num_epochs=opt.epochs)
 
