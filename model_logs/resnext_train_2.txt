@@ -1,14 +1,14 @@
 /gpfs/projects/LynchGroup/spacewhale/git_spacewhale/spacewhale/shell_scripts
 /gpfs/projects/LynchGroup/spacewhale
-Mon May 20 23:14:42 EDT 2019
-Now train resnext lr=0.001
+Tue May 21 12:00:42 EDT 2019
+Now train resnext LR=0.2
 ######################################################################################################
 WELCOME TO SPACEWHALE!
 ######################################################################################################
 We will now train your model.. please be patient
-Using resneXt Your trained model will be named resnext_temp
+Using resneXt Your trained model will be named resnext_full256_lr2
 ------------------------------------------------------------------------------
-<torch.utils.data.dataloader.DataLoader object at 0x2aaafcaeb6a0>
+<torch.utils.data.dataloader.DataLoader object at 0x2aaaf6efcb00>
 Your dataset size is: 12545
 You have 2 classes in your dataset
 ------------------------------------------------------------------------------
@@ -21,10 +21,12 @@ Data loaded into gpu
 /gpfs/projects/LynchGroup/spacewhale/git_spacewhale/spacewhale
 Epoch 0/23
 ----------
+torch.Size([32, 2, 1, 1])
+torch.Size([32]) labels
 Traceback (most recent call last):
-  File "training_tester_weighted.py", line 130, in <module>
+  File "training_tester_weighted4.py", line 129, in <module>
     model_ft = s.train_model(opt, device, dataset_sizes, dataloaders, model_ft, criterion, optimizer_ft, exp_lr_scheduler, num_epochs=opt.epochs)
-  File "/gpfs/projects/LynchGroup/spacewhale/git_spacewhale/spacewhale/m_util2.py", line 127, in train_model
+  File "/gpfs/projects/LynchGroup/spacewhale/git_spacewhale/spacewhale/m_util2.py", line 128, in train_model
     loss = criterion(outputs, labels)
   File "/gpfs/projects/LynchGroup/spacewhale/space_env/lib/python3.7/site-packages/torch/nn/modules/module.py", line 477, in __call__
     result = self.forward(*input, **kwargs)
@@ -35,4 +37,4 @@ Traceback (most recent call last):
   File "/gpfs/projects/LynchGroup/spacewhale/space_env/lib/python3.7/site-packages/torch/nn/functional.py", line 1409, in nll_loss
     return torch._C._nn.nll_loss2d(input, target, weight, _Reduction.get_enum(reduction), ignore_index)
 RuntimeError: 1only batches of spatial targets supported (non-empty 3D tensors) but got targets of size: : [32]
-Mon May 20 23:14:49 EDT 2019
+Tue May 21 12:00:49 EDT 2019
