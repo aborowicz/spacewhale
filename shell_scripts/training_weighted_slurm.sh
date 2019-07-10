@@ -1,7 +1,7 @@
 #!/bin/bash
 #
 #SBATCH --job-name=sat_training1
-#SBATCH --output=densenet_full224training_res_lr2.txt
+#SBATCH --output=test.txt
 #SBATCH --ntasks=28
 #SBATCH --nodes=1
 #SBATCH --time=08:00:00
@@ -30,5 +30,6 @@ source activate ./space_env
 cd git_spacewhale/spacewhale
 date
 
-python training_tester_weighted.py --name densenet_full224_lr2 --model densenet --data_dir ../../whale/tiledair_224/full_air/  --epochs 24
+python training_tester_weighted.py --name test_model --model resnet152 --lr 0.001 --data_dir ../../whale/tiled_air32/full_air/  --epochs 24
 date
+
