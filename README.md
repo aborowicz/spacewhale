@@ -14,7 +14,7 @@ SPACEWHALE runs on the command line.
 ```m_util.py``` houses functions etc. that are called by other scripts
 
 ```training_tester_weighted.py``` trains a model using a set of aerial images that you define. Example:
-``` python training_tester_weighted.py --name model_1 --data_dir './the_data' --lr 0.001 --verbose True --epochs 24```
+``` python training_tester_weighted.py --name model_1 --data_dir './the_data' --model resnet152 --lr 0.001 --verbose True --epochs 24```
 ```name``` is what you want to call the model you're about to train
 ```data_dir``` is the directory with your training data in it. In this case your training data need to be in a dir called *train* and you should point to the dir above it. Inside *train* you need a dir with each of your classes (e.g. *whale* and *water*)
 ```verbose``` asks whether you want info printed out in the terminal
@@ -23,7 +23,7 @@ SPACEWHALE runs on the command line.
 ```epochs``` asks for how many epochs you'd like the model to train
 
 ```test_script.py``` validates the model with a test set that you define and kicks out some output such as the precision and recall at each epoch. It also writes out 3 CSVs with the filename, label, and prediction for each image in a separate CSV. Example:
-```python test_script.py --data_dir './test_dir' --model model_1 --epochs 24```
+```python test_script.py --data_dir './test_dir' --modtype resnet152 --model model_1 --epochs 24```
 ```data_dir``` should include two dirs labeled with your classes (exactly as they were for training, e.g. *water* and *whale* in our case). 
 ```model``` is the trained model that you'll use to test with
 ```modtype``` is the model type as in the training script
