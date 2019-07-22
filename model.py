@@ -16,10 +16,6 @@ def define_model(name ='resnet32'):
         model = models.resnet34(pretrained=True)
         num_ftrs = model.fc.in_features  
         model.fc = nn.Linear(num_ftrs, 2)    
-    if name=='resnet152':
-        model = models.resnet152(pretrained=True)
-        num_ftrs = model.fc.in_features
-        model.fc = nn.Linear(num_ftrs,2)
     if name=='densenet':
         model = models.densenet161(pretrained=True)
         num_ftrs = model.classifier.in_features  
