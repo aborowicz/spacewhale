@@ -58,7 +58,7 @@ trained_model = os.path.join('./trained_model',opt.model,epoch_to_use)#Added her
 
 #trained_model = os.path.join('./trained_model',opt.model,'epoch_24.pth')
 data_dir = opt.data_dir  
-
+print(data_dir)
 #epoch_to_use = 'epoch_'+str(opt.epoch)+'.pth' 
 
 #trained_model = '/home/ghumphries/Projects/whale/trained_model/MODEL_NO_W1/'+epoch_to_use
@@ -98,7 +98,7 @@ model_ft.eval()
 #image_dataset = datasets.ImageFolder(data_dir, s.data_transforms['test'])
 image_datasets = ImageFolderWithPaths(data_dir, s.data_transforms['test'])
 #image_datasets = datasets.ImageFolder(data_dir, s.data_transforms['test'])
-dataloaders = torch.utils.data.DataLoader(image_datasets, batch_size=32,shuffle=False, num_workers=4,drop_last = True)
+dataloaders = torch.utils.data.DataLoader(image_datasets, batch_size=9,shuffle=True, num_workers=4,drop_last = True)
 print(dataloaders)
 
 class_names = image_datasets.classes
